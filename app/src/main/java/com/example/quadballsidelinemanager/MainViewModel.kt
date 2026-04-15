@@ -50,6 +50,12 @@ class MainViewModel : ViewModel() {
     private val _opposingTeam = MutableStateFlow<String>("")
     val opposingTeam: StateFlow<String> = _opposingTeam.asStateFlow()
 
+    private val _isGenderRuleEnabled = MutableStateFlow(true)
+    val isGenderRuleEnabled = _isGenderRuleEnabled.asStateFlow()
+
+    private val _isPositionRuleEnabled = MutableStateFlow(true)
+    val isPositionRuleEnabled = _isPositionRuleEnabled.asStateFlow()
+
     // Whether game interaction is allowed
     private val _pitchEnabled = MutableStateFlow<EnableType>(EnableType.NONE)
     val pitchEnabled: StateFlow<EnableType> = _pitchEnabled.asStateFlow()
@@ -289,9 +295,19 @@ class MainViewModel : ViewModel() {
         val requiredPos = getRequiredPositionForSlot(targetSlotId)
 
         // Check if player is eligible for this specific slot
-        if (!player.positions.contains(requiredPos)) {
-            _statEventMessage.tryEmit("${player.lastName} is not registered as a ${requiredPos.name}")
+        if (_isPositionRuleEnabled.value && !player.positions.contains(requiredPos)) {
+            viewModelScope.launch {
+                _statEventMessage.emit("${player.lastName} is not registered as a ${requiredPos.name}")
+            }
             resetRecordingState() // Reset the drag/sub process
+            return
+        }
+
+        if (!canAddPlayerToPitch(player, targetSlotId)) {
+            viewModelScope.launch {
+                _statEventMessage.emit("Cannot add ${player.lastName}: Already 4 players of gender ${player.gender} on pitch.")
+            }
+            resetRecordingState()
             return
         }
 
@@ -413,10 +429,6 @@ class MainViewModel : ViewModel() {
         _pendingSlot.value = null
         _pendingPlayer.value = null
         _positionFilter.value = null
-
-        viewModelScope.launch {
-            _statEventMessage.emit("Data entry was canceled.")
-        }
     }
 
     /**
@@ -749,5 +761,31 @@ class MainViewModel : ViewModel() {
         viewModelScope.launch {
             _statEventMessage.emit("Updated ${player.lastName}'s info.")
         }
+    }
+
+    fun toggleGenderRule(isEnabled: Boolean) {
+        _isGenderRuleEnabled.value = isEnabled
+    }
+
+    private fun canAddPlayerToPitch(newPlayer: Player, targetSlotId: String): Boolean {
+        if (!_isGenderRuleEnabled.value) return true
+
+        val currentOccupants = _pitchOccupants.value
+        val playerBeingReplaced = currentOccupants[targetSlotId]
+
+        // Get all players currently on the pitch, excluding the one being replaced
+        val playersStaying = currentOccupants.values
+            .filterNotNull()
+            .filter { it.id != playerBeingReplaced?.id && it.id != newPlayer.id }
+
+        // Count how many share the same gender as the incoming player
+        val sameGenderCount = playersStaying.count { it.gender == newPlayer.gender }
+
+        // Rule: No more than 4. If there are already 4, return false.
+        return sameGenderCount < 4
+    }
+
+    fun togglePositionRule(isEnabled: Boolean) {
+        _isPositionRuleEnabled.value = isEnabled
     }
 }
