@@ -1,0 +1,90 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:orientation="vertical"
+    android:padding="24dp">
+
+    <EditText
+        android:id="@+id/etPlayerName"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Full Name (e.g. Harry Potter)"
+        android:inputType="textPersonName" />
+
+    <EditText
+        android:id="@+id/etPlayerNumber"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:hint="Jersey Number"
+        android:inputType="number" />
+
+    <com.google.android.material.button.MaterialButtonToggleGroup
+        android:id="@+id/toggleGender"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        app:checkedButton="@+id/btnGenderOther"
+        app:singleSelection="true">
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnGenderMale"
+            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Male" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnGenderFemale"
+            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Female" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnGenderNb"
+            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="NB" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnGenderOther"
+            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Other" />
+    </com.google.android.material.button.MaterialButtonToggleGroup>
+
+    <com.google.android.material.textfield.TextInputLayout
+        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:hint="Primary Position">
+
+        <AutoCompleteTextView
+            android:id="@+id/spinnerPrimaryPosition"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:inputType="none" />
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:text="Select Positions:"
+        android:textStyle="bold" />
+
+    <CheckBox android:id="@+id/cbKeeper" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Keeper" />
+    <CheckBox android:id="@+id/cbChaser" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Chaser" />
+    <CheckBox android:id="@+id/cbBeater" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Beater" />
+    <CheckBox android:id="@+id/cbSeeker" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Seeker" />
+
+</LinearLayout>

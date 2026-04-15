@@ -1,0 +1,22 @@
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:id="@+id/dest_home"
+        android:title="HOME"
+        android:icon="@drawable/ic_home" />
+    <item
+        android:id="@+id/dest_roster"
+        android:title="ROSTER"
+        android:icon="@drawable/ic_roster" />
+    <item
+        android:id="@+id/dest_summary"
+        android:title="SUMMARY"
+        android:icon="@drawable/ic_stats" />
+    <item
+        android:id="@+id/dest_pitch"
+        android:title="PITCH"
+        android:icon="@drawable/ic_hoop" />
+    <item
+        android:id="@+id/dest_settings"
+        android:title="SETTINGS"
+        android:icon="@drawable/ic_settings" />
+</menu>

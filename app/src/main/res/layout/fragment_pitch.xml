@@ -1,0 +1,209 @@
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fitsSystemWindows="true">
+
+    <View
+        android:id="@+id/pitch_background"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#1B261B" />
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btn_cancel_recording"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Cancel"
+        android:visibility="gone"
+        app:icon="@drawable/ic_close"
+        app:backgroundTint="@color/design_default_color_error"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_margin="16dp" />
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btn_opp_turnover"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Turnover"
+        android:visibility="gone"
+        app:backgroundTint="@color/design_default_color_error"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        android:layout_margin="16dp" />
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/pitch_field"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:padding="16dp"
+        android:clipChildren="false"
+        android:clipToPadding="false"
+
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toTopOf="@id/bench_container"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintVertical_weight="2">
+
+        <LinearLayout
+            android:id="@+id/hoops_opp"
+            android:clipChildren="false"
+            android:clipToPadding="false"
+
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent">
+            <ImageButton
+                android:id="@+id/hoop_opp_small"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:src="@drawable/ic_hoop"
+                android:background="@android:color/transparent"
+                android:layout_marginEnd="12dp" />
+            <ImageButton
+                android:id="@+id/hoop_opp_tall"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:src="@drawable/ic_hoop"
+                android:background="@android:color/transparent"
+                android:layout_marginEnd="12dp" />
+            <ImageButton
+                android:id="@+id/hoop_opp_medium"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:src="@drawable/ic_hoop"
+                android:background="@android:color/transparent" />
+        </LinearLayout>
+
+        <com.google.android.material.divider.MaterialDivider
+            android:id="@+id/mid_pitch"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:dividerColor="@color/white"
+            app:layout_constraintTop_toBottomOf="@+id/hoops_opp"
+            app:layout_constraintBottom_toTopOf="@id/hoops_txq" />
+
+        <LinearLayout
+            android:id="@+id/hoops_txq"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent">
+            <ImageButton
+                android:id="@+id/hoop_txq_medium"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:src="@drawable/ic_hoop"
+                android:background="@android:color/transparent"
+                android:layout_marginEnd="12dp" />
+            <ImageButton
+                android:id="@+id/hoop_txq_tall"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:src="@drawable/ic_hoop"
+                android:background="@android:color/transparent"
+                android:layout_marginEnd="12dp" />
+            <ImageButton
+                android:id="@+id/hoop_txq_small"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:src="@drawable/ic_hoop"
+                android:background="@android:color/transparent" />
+        </LinearLayout>
+
+        <include android:id="@+id/slot_keeper" layout="@layout/item_field_slot"
+            android:layout_width="@dimen/pitch_card_width"
+            android:layout_height="@dimen/pitch_card_height"
+            app:layout_constraintTop_toTopOf="@id/mid_pitch"
+            app:layout_constraintEnd_toStartOf="@id/hoops_txq"
+            android:layout_marginTop="16dp" />
+
+        <include android:id="@+id/slot_chaser_top" layout="@layout/item_field_slot"
+            android:layout_width="@dimen/pitch_card_width"
+            android:layout_height="@dimen/pitch_card_height"
+            app:layout_constraintTop_toTopOf="@id/mid_pitch"
+            app:layout_constraintStart_toEndOf="@id/hoops_txq"
+            android:layout_marginTop="16dp" />
+
+        <include android:id="@+id/slot_chaser_hoops_left" layout="@layout/item_field_slot"
+            android:layout_width="@dimen/pitch_card_width"
+            android:layout_height="@dimen/pitch_card_height"
+            app:layout_constraintBottom_toTopOf="@id/hoops_txq"
+            app:layout_constraintStart_toEndOf="@id/slot_keeper"
+            app:layout_constraintEnd_toStartOf="@id/hoops_txq"
+            android:layout_marginBottom="8dp" />
+
+        <include android:id="@+id/slot_chaser_hoops_right" layout="@layout/item_field_slot"
+            android:layout_width="@dimen/pitch_card_width"
+            android:layout_height="@dimen/pitch_card_height"
+            app:layout_constraintBottom_toTopOf="@id/hoops_txq"
+            app:layout_constraintEnd_toStartOf="@id/slot_chaser_top"
+            app:layout_constraintStart_toEndOf="@id/hoops_txq"
+            android:layout_marginBottom="8dp" />
+
+        <include android:id="@+id/slot_beater_1" layout="@layout/item_field_slot"
+            android:layout_width="@dimen/pitch_card_width"
+            android:layout_height="@dimen/pitch_card_height"
+
+            app:layout_constraintTop_toBottomOf="@id/mid_pitch"
+            app:layout_constraintStart_toStartOf="@id/hoops_txq"
+            app:layout_constraintEnd_toEndOf="@id/hoops_txq"
+
+            android:layout_marginTop="16dp" />
+
+        <include android:id="@+id/slot_beater_2" layout="@layout/item_field_slot"
+            android:layout_width="@dimen/pitch_card_width"
+            android:layout_height="@dimen/pitch_card_height"
+
+            app:layout_constraintBottom_toTopOf="@id/mid_pitch"
+            app:layout_constraintStart_toStartOf="@id/hoops_txq"
+            app:layout_constraintEnd_toEndOf="@id/hoops_txq"
+
+            android:layout_marginBottom="16dp"/>
+
+        <include android:id="@+id/slot_seeker" layout="@layout/item_field_slot"
+            android:layout_width="@dimen/pitch_card_width"
+            android:layout_height="@dimen/pitch_card_height"
+            android:visibility="gone"
+
+            app:layout_constraintBottom_toTopOf="@id/mid_pitch"
+            app:layout_constraintEnd_toEndOf="parent"
+
+            android:layout_marginBottom="16dp"/>
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+    <FrameLayout
+        android:id="@+id/bench_container"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:background="#121212"
+        app:layout_constraintTop_toBottomOf="@id/pitch_field"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintVertical_weight="1" />
+
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/fab_toggle_bench"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_margin="24dp"
+        android:contentDescription="Toggle Bench"
+        android:src="@drawable/ic_roster"
+        app:backgroundTint="#BF5700"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:tint="@color/white" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

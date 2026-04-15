@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="24dp"
+    android:background="@drawable/rounded_bottom_sheet">
+
+    <View
+        android:layout_width="40dp"
+        android:layout_height="4dp"
+        android:layout_gravity="center_horizontal"
+        android:background="#CCCCCC"
+        android:layout_marginBottom="16dp"/>
+
+    <RelativeLayout android:layout_width="match_parent" android:layout_height="wrap_content">
+        <TextView
+            android:id="@+id/detailPlayerName"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="NICO SALINAS"
+            android:textSize="22sp"
+            android:textStyle="bold"
+            android:textColor="#BF5700"/> <TextView
+        android:id="@+id/detailPlayerNumber"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentEnd="true"
+        android:text="#11"
+        android:textSize="22sp"
+        android:textStyle="bold"/>
+    </RelativeLayout>
+
+    <TextView
+        android:id="@+id/detailPlayerPosition"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="KEEPER"
+        android:textSize="14sp"
+        android:layout_marginBottom="24dp"/>
+
+    <View android:layout_width="match_parent" android:layout_height="1dp" android:background="#EEEEEE" android:layout_marginBottom="16dp"/>
+
+    <GridLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:columnCount="2">
+
+        <TextView
+            android:id="@+id/statGoals"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_columnWeight="1"
+            android:text="Goals: 0"
+            android:padding="8dp"/>
+
+        <TextView
+            android:id="@+id/statGoalLocations"
+            android:text="Goal Locations: 0, 0, 0"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_columnWeight="1"
+            android:padding="8dp"/>
+
+        <TextView
+            android:id="@+id/statShots"
+            android:text="Shots: 0 of 0 (0%)"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_columnWeight="1"
+            android:padding="8dp"/>
+
+        <TextView
+            android:id="@+id/statShotLocations"
+            android:text="Shot Locations: 0, 0, 0"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_columnWeight="1"
+            android:padding="8dp"/>
+
+        <TextView
+            android:id="@+id/statAssists"
+            android:text="Assists: 0"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_columnWeight="1"
+            android:padding="8dp"/>
+
+        <TextView
+            android:id="@+id/statTurnovers"
+            android:text="Turnovers: 0"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_columnWeight="1"
+            android:padding="8dp"/>
+
+        <TextView
+            android:id="@+id/statPlusMinus"
+            android:text="+/-: +0"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_columnWeight="1"
+            android:padding="8dp"/>
+
+        <TextView
+            android:id="@+id/statPossessions"
+            android:text="Poss (O:D): 0:0"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_columnWeight="1"
+            android:padding="8dp"/>
+
+        <TextView
+            android:id="@+id/statEfficiency"
+            android:text="EFF: 0.00"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_columnWeight="1"
+            android:padding="8dp"/>
+    </GridLayout>
+
+    <Button
+        android:id="@+id/btnEditPlayer"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="24dp"
+        android:text="Edit Player Info"
+        android:backgroundTint="@color/black"/>
+
+</LinearLayout>

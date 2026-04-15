@@ -1,0 +1,105 @@
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/player_card_container"
+    android:layout_width="@dimen/player_card_width"
+    android:layout_height="@dimen/player_card_height"
+    app:cardCornerRadius="12dp"
+    app:cardElevation="4dp"
+    android:layout_margin="8dp"
+    app:strokeWidth="2dp"
+    app:strokeColor="@color/white">
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <ImageView
+            android:id="@+id/player_photo"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:scaleType="centerCrop"
+            app:layout_constraintBottom_toTopOf="@+id/stat_bar"
+            app:layout_constraintTop_toTopOf="parent"
+            android:contentDescription="Player Photo"
+            android:src="@drawable/ic_player_placeholder"/>
+
+        <FrameLayout
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:background="@drawable/circle_background"
+            android:backgroundTint="@color/burnt_orange"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            android:layout_margin="8dp">
+
+            <TextView
+                android:id="@+id/player_number"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:text="#"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:textColor="@color/white"
+                android:shadowColor="#80000000" android:shadowDx="2"
+                android:shadowDy="2"
+                android:shadowRadius="4" />
+<!--                app:layout_constraintStart_toStartOf="parent"-->
+<!--                app:layout_constraintTop_toTopOf="parent"-->
+<!--                android:layout_margin="8dp" />-->
+
+        </FrameLayout>
+
+        <FrameLayout
+            android:layout_width="60dp"
+            android:layout_height="60dp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="parent">
+
+            <View
+                android:id="@+id/position_flag"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:background="@drawable/triangle_flag" />
+
+            <TextView
+                android:id="@+id/position_badge_text"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="top|end"
+                android:layout_marginTop="14dp"
+                android:layout_marginEnd="2dp"
+                android:rotation="45"
+                android:text="CHASER"
+                android:textColor="@android:color/white"
+                android:textSize="10sp"
+                android:textStyle="bold"
+                android:textAllCaps="true" />
+        </FrameLayout>
+
+        <TextView
+            android:id="@+id/stat_bar"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="#F0F0F0"
+            android:gravity="center"
+            android:padding="4dp"
+            android:text="__.__% ACCURACY"
+            android:textSize="10sp"
+            app:layout_constraintBottom_toTopOf="@+id/player_name" />
+
+        <TextView
+            android:id="@+id/player_name"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@android:color/white"
+            android:gravity="center"
+            android:padding="8dp"
+            android:text="PLAYER NAME"
+            android:textColor="#BF5700"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            app:layout_constraintBottom_toBottomOf="parent" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+</com.google.android.material.card.MaterialCardView>

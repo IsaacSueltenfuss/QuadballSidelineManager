@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:id="@+id/sort_lastName"
+        android:title="By Last Name" />
+    <item
+        android:id="@+id/sort_position"
+        android:title="By Position" />
+    <item
+        android:id="@+id/sort_gender"
+        android:title="By Gender" />
+    <item
+        android:id="@+id/sort_number"
+        android:title="By Jersey Number" />
+    <item
+        android:id="@+id/sort_possessions"
+        android:title="By Possessions" />
+    <item
+        android:id="@+id/sort_plusMinus"
+        android:title="By Plus/Minus" />
+    <item
+        android:id="@+id/sort_reset"
+        android:title="Reset Sort" />
+</menu>

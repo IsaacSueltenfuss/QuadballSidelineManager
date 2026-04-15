@@ -1,0 +1,172 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/black"
+    android:fillViewport="true">
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="16dp">
+
+        <include
+            android:id="@+id/summary_header"
+            layout="@layout/view_header"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <LinearLayout
+            android:id="@+id/layout_quick_stats"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:orientation="horizontal"
+            app:layout_constraintTop_toBottomOf="@id/summary_header">
+
+            <include android:id="@+id/stat_score_team" layout="@layout/item_summary_mini_card" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" />
+            <include android:id="@+id/stat_shooting_perc" layout="@layout/item_summary_mini_card" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" />
+            <include android:id="@+id/stat_score_opp" layout="@layout/item_summary_mini_card" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" />
+        </LinearLayout>
+
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/card_offensive_breakdown"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            app:cardBackgroundColor="@color/light_black"
+            app:layout_constraintTop_toBottomOf="@id/layout_quick_stats">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="POSSESSION OUTCOMES"
+                    android:textColor="@color/burnt_orange"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/tv_possession_ratio"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:text="Goals (0) vs Turnovers (0)"
+                    android:textColor="@color/white"
+                    android:textSize="16sp" />
+
+                <com.google.android.material.progressindicator.LinearProgressIndicator
+                    android:id="@+id/progress_goal_ratio"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    app:trackColor="@color/red"
+                    app:indicatorColor="@color/green" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/card_usage"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            app:cardBackgroundColor="@color/light_black"
+            app:layout_constraintTop_toBottomOf="@id/card_offensive_breakdown">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="USAGE LEADERS"
+                    android:textColor="@color/burnt_orange"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/tv_high_usage"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:text="Calculating..."
+                    android:textColor="@color/white" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/card_hoop_performance"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            app:cardBackgroundColor="@color/light_black"
+            app:layout_constraintTop_toBottomOf="@id/card_usage">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="OFFENSIVE HOOP PERFORMANCE"
+                    android:textColor="@color/burnt_orange"
+                    android:textStyle="bold" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:orientation="horizontal">
+
+                    <include android:id="@+id/opp_hoop_small" layout="@layout/item_hoop_stat" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" />
+                    <include android:id="@+id/opp_hoop_tall" layout="@layout/item_hoop_stat" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" />
+                    <include android:id="@+id/opp_hoop_medium" layout="@layout/item_hoop_stat" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" />
+                </LinearLayout>
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/card_goals_conceded"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            app:cardBackgroundColor="@color/light_black"
+            app:layout_constraintTop_toBottomOf="@id/card_hoop_performance">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="GOALS CONCEDED"
+                    android:textColor="@color/burnt_orange"
+                    android:textStyle="bold" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:orientation="horizontal">
+
+                    <include android:id="@+id/txq_hoop_medium" layout="@layout/item_hoop_stat" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" />
+                    <include android:id="@+id/txq_hoop_tall" layout="@layout/item_hoop_stat" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" />
+                    <include android:id="@+id/txq_hoop_small" layout="@layout/item_hoop_stat" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" />
+                </LinearLayout>
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+</androidx.core.widget.NestedScrollView>

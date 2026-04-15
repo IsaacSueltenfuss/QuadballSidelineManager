@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:gravity="center"
+    android:orientation="vertical"
+    android:padding="8dp">
+
+    <ImageView
+        android:id="@+id/iv_hoop_icon"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:src="@drawable/ic_hoop"
+        android:contentDescription="Hoop Icon" />
+
+    <TextView
+        android:id="@+id/tv_hoop_label"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:text="TALL"
+        android:textColor="@color/white"
+        android:alpha="0.6"
+        android:textSize="10sp"
+        android:textStyle="bold" />
+
+    <TextView
+        android:id="@+id/tv_hoop_stats"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="0 of 0"
+        android:textColor="@color/burnt_orange"
+        android:textSize="14sp"
+        android:textStyle="bold" />
+
+    <TextView
+        android:id="@+id/tv_hoop_percent"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="0%"
+        android:textColor="@color/burnt_orange"
+        android:textSize="14sp"
+        android:textStyle="bold" />
+</LinearLayout>
