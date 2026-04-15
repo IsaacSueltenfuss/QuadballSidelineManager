@@ -75,9 +75,9 @@ class StatsSummary : Fragment() {
 
         // 2. Update Snapshot Cards
         // Assuming you have a custom binding for the mini-cards
-        binding.statScoreTeam.tvStatLabel.text = "${viewModel.currentTeam.value.teamAcronym.toString().uppercase()} SCORE"
+        binding.statScoreTeam.tvStatLabel.text = "${viewModel.currentTeam.value.teamAcronym.uppercase()} SCORE"
         binding.statScoreTeam.tvStatValue.text = "${totalGoals * 10}"
-        binding.statScoreOpp.tvStatLabel.text = "${viewModel.opposingTeam.value} SCORE"
+        binding.statScoreOpp.tvStatLabel.text = "${viewModel.opposingTeam.value.uppercase()} SCORE"
         binding.statScoreOpp.tvStatValue.text = "${totalGoalsConceded * 10}"
 
         val conversionRate = if (totalTeamPossessions > 0) totalGoals.toDouble() * 100 / totalTeamPossessions.toDouble() else 0.0
@@ -88,13 +88,41 @@ class StatsSummary : Fragment() {
             (totalGoals.toFloat() / (totalGoals + totalTurnovers) * 100).toInt() else 0
         binding.progressGoalRatio.setProgress(ratio, true)
 
-        val topScorers = players.sortedByDescending { it.totalGoals }.take(3)
-        val scorersText = topScorers.joinToString("\n") { "${it.lastName}: ${it.totalGoals}" }
-        binding.tvMostGoals.text = scorersText
+        val topScorersPerPossession = players
+            .filter { it.totalOffensivePossessions > 3 } // Filter for a minimum sample size
+            .sortedByDescending { it.totalGoals.toDouble() / it.totalPossessions }
+            .take(3)
+        val scorersText = topScorersPerPossession.joinToString("\n") { player ->
+            val rate = (player.totalGoals.toDouble() / player.totalPossessions)
+            "${player.lastName}: ${String.format("%.2f", rate)}" }
+        binding.tvMostGoals.text = if (scorersText.isEmpty()) "A minimum of 3 offensive possessions is required." else scorersText
 
-        val topAssists = players.sortedByDescending { it.totalAssists }.take(3)
-        val assistsText = topAssists.joinToString("\n") { "${it.lastName}: ${it.totalAssists}" }
-        binding.tvMostAssists.text = assistsText
+        val topAssistsPerPossession = players
+            .filter { it.totalOffensivePossessions > 3 } // Filter for a minimum sample size
+            .sortedByDescending { it.totalAssists.toDouble() / it.totalPossessions }
+            .take(3)
+        val assistsText = topAssistsPerPossession.joinToString("\n") { player ->
+            val rate = (player.totalAssists.toDouble() / player.totalPossessions)
+            "${player.lastName}: ${String.format("%.2f", rate)}" }
+        binding.tvMostAssists.text = if (assistsText.isEmpty()) "A minimum of 3 offensive possessions is required." else assistsText
+
+        val topPlusMinusPerPossession = players
+            .filter { it.totalOffensivePossessions > 3 } // Filter for a minimum sample size
+            .sortedByDescending { it.plusMinus.toDouble() / it.totalPossessions }
+            .take(3)
+        val topPlusMinusText = topPlusMinusPerPossession.joinToString("\n") { player ->
+            val rate = (player.plusMinus.toDouble() / player.totalPossessions) * 10
+            "${player.lastName}: ${String.format("%.2f", rate)}" }
+        binding.tvBestPlusMinus.text = if (topPlusMinusText.isEmpty()) "A minimum of 3 offensive possessions is required." else topPlusMinusText
+
+        val leastPlusMinusPerPossession = players
+            .filter { it.totalOffensivePossessions > 3 } // Filter for a minimum sample size
+            .sortedBy { it.plusMinus.toDouble() / it.totalPossessions }
+            .take(3)
+        val leastPlusMinusText = leastPlusMinusPerPossession.joinToString("\n") { player ->
+            val rate = (player.plusMinus.toDouble() / player.totalPossessions) * 10
+            "${player.lastName}: ${String.format("%.2f", rate)}" }
+        binding.tvLeastPlusMinus.text = if (leastPlusMinusText.isEmpty()) "A minimum of 3 offensive possessions is required." else leastPlusMinusText
 
         // 4. Usage Leaders (Sorting players by possessions)
         val mostUsedPlayers = players.sortedByDescending { it.totalPossessions }.take(3)
