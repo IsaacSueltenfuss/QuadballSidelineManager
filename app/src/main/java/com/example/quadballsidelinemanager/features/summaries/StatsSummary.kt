@@ -1,10 +1,13 @@
 package com.example.quadballsidelinemanager.features.summaries
 
 import android.os.Bundle
+import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.LinearLayout
 import android.widget.TextView
+import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.Lifecycle
@@ -62,7 +65,10 @@ class StatsSummary : Fragment() {
             .flatMap { it.possessions } // Get all possessions from all players
             .distinctBy { it.id }       // Ensure each team possession is only counted once
             .count { it.possessionType == PossessionType.DEFENSE && it.result == PossessionResult.CONCEDED_GOAL } //        val totalShots = players.sumOf { it.totalShotsTaken }
-        val totalPossessions = players.sumOf { it.totalPossessions }
+        val totalTeamPossessions = players
+            .flatMap { it.possessions } // Combine every player's possession list into one
+            .distinctBy { it.id }       // Filter out duplicates based on the unique possession ID
+            .size
         val totalTurnovers = players.sumOf { it.totalTurnovers }
 
         val shootingPerc = if (totalShots > 0) (totalGoals.toDouble() / totalShots) * 100 else 0.0
@@ -72,18 +78,32 @@ class StatsSummary : Fragment() {
         binding.statScoreTeam.tvStatLabel.text = "${viewModel.currentTeam.value.teamAcronym.toString().uppercase()} SCORE"
         binding.statScoreTeam.tvStatValue.text = "${totalGoals * 10}"
         binding.statScoreOpp.tvStatLabel.text = "${viewModel.opposingTeam.value} SCORE"
-        binding.statScoreOpp.tvStatValue.text = "${totalGoalsConceded}"
+        binding.statScoreOpp.tvStatValue.text = "${totalGoalsConceded * 10}"
+
+        val conversionRate = if (totalTeamPossessions > 0) totalGoals.toDouble() * 100 / totalTeamPossessions.toDouble() else 0.0
 
         // 3. Update Ratio Bar
-        binding.tvPossessionRatio.text = "Goals: $totalGoals | Turnovers: $totalTurnovers"
+        binding.tvPossessionRatio.text = "Goals: $totalGoals | Turnovers: $totalTurnovers | ${String.format("%.2f", conversionRate)}% Conversion"
         val ratio = if (totalGoals + totalTurnovers > 0)
             (totalGoals.toFloat() / (totalGoals + totalTurnovers) * 100).toInt() else 0
         binding.progressGoalRatio.setProgress(ratio, true)
 
+        val topScorers = players.sortedByDescending { it.totalGoals }.take(3)
+        val scorersText = topScorers.joinToString("\n") { "${it.lastName}: ${it.totalGoals}" }
+        binding.tvMostGoals.text = scorersText
+
+        val topAssists = players.sortedByDescending { it.totalAssists }.take(3)
+        val assistsText = topAssists.joinToString("\n") { "${it.lastName}: ${it.totalAssists}" }
+        binding.tvMostAssists.text = assistsText
+
         // 4. Usage Leaders (Sorting players by possessions)
-        val topPlayers = players.sortedByDescending { it.totalPossessions }.take(3)
-        val usageText = topPlayers.joinToString("\n") { "${it.lastName}: ${it.totalPossessions} possessions" }
-        binding.tvHighUsage.text = usageText
+        val mostUsedPlayers = players.sortedByDescending { it.totalPossessions }.take(3)
+        val highUsageText = mostUsedPlayers.joinToString("\n") { "${it.lastName}: ${it.totalPossessions}" }
+        binding.tvHighUsage.text = highUsageText
+
+        val leastUsedPlayers = players.sortedBy { it.totalPossessions }.take(3)
+        val lowUsageText = leastUsedPlayers.joinToString("\n") { "${it.lastName}: ${it.totalPossessions}" }
+        binding.tvLowUsage.text = lowUsageText
 
         updateHoopStats(players)
     }
@@ -108,8 +128,30 @@ class StatsSummary : Fragment() {
 
             hoopView.findViewById<TextView>(R.id.tv_hoop_label).text = label
             hoopView.findViewById<TextView>(R.id.tv_hoop_stats).text = "$goalsOnHoop of ${shotsOnHoop.size}"
-            val accuracy = if (shotsOnHoop.isNotEmpty()) goalsOnHoop.toDouble() / shotsOnHoop.size.toDouble() else 0.00
-            hoopView.findViewById<TextView>(R.id.tv_hoop_percent).text = String.format("%.2f", accuracy)
+
+            val detailContainer = hoopView.findViewById<LinearLayout>(R.id.container_shot_details)
+            detailContainer.removeAllViews()
+
+            val shotsByType = shotsOnHoop.groupBy { it.shotType } //
+
+            shotsByType.forEach { (type, typeShots) ->
+                val typeGoals = typeShots.count { it.isGood }
+                val typeTotal = typeShots.size
+                val accuracy = (typeGoals.toDouble() / typeTotal) * 100
+
+                // Create a small TextView for each shot type
+                val tv = TextView(context).apply {
+                    text = "${type.name.uppercase()}: ${accuracy.toInt()}%"
+                    setTextColor(ContextCompat.getColor(context, R.color.white))
+                    textSize = 9f
+                    gravity = Gravity.CENTER
+                    alpha = 0.8f
+                }
+                detailContainer.addView(tv)
+            }
+
+            val accuracy = if (shotsOnHoop.isNotEmpty()) goalsOnHoop.toDouble() * 100 / shotsOnHoop.size.toDouble() else 0.00
+            hoopView.findViewById<TextView>(R.id.tv_hoop_percent).text = "${String.format("%.2f", accuracy)}%"
 
             // Optional: Dim the hoop icon if it hasn't been targeted yet
             hoopView.findViewById<View>(R.id.iv_hoop_icon).alpha = if (shotsOnHoop.isEmpty()) 0.3f else 1.0f

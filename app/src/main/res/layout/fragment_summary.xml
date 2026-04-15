@@ -25,7 +25,7 @@
             app:layout_constraintTop_toBottomOf="@id/summary_header">
 
             <include android:id="@+id/stat_score_team" layout="@layout/item_summary_mini_card" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" />
-            <include android:id="@+id/stat_shooting_perc" layout="@layout/item_summary_mini_card" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" />
+            <Space android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" />
             <include android:id="@+id/stat_score_opp" layout="@layout/item_summary_mini_card" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" />
         </LinearLayout>
 
@@ -55,7 +55,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="8dp"
-                    android:text="Goals (0) vs Turnovers (0)"
+                    android:text="Goals (0) vs Turnovers (0) : 0% Conversion"
                     android:textColor="@color/white"
                     android:textSize="16sp" />
 
@@ -70,7 +70,7 @@
         </com.google.android.material.card.MaterialCardView>
 
         <com.google.android.material.card.MaterialCardView
-            android:id="@+id/card_usage"
+            android:id="@+id/player_goal_info"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="12dp"
@@ -80,28 +80,141 @@
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="vertical"
+                android:orientation="horizontal"
+                android:layout_gravity="center_horizontal"
                 android:padding="16dp">
 
-                <TextView
+                <LinearLayout
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="USAGE LEADERS"
-                    android:textColor="@color/burnt_orange"
-                    android:textStyle="bold" />
+                    android:layout_weight="1"
+                    android:orientation="vertical"
+                    android:layout_gravity="center_horizontal"
+                    android:gravity="center">
 
-                <TextView
-                    android:id="@+id/tv_high_usage"
-                    android:layout_width="match_parent"
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="MOST GOALS"
+                        android:textColor="@color/burnt_orange"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/tv_most_goals"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center"
+                        android:layout_marginTop="8dp"
+                        android:text="Calculating..."
+                        android:textColor="@color/white" />
+                </LinearLayout>
+
+                <Space
+                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
-                    android:text="Calculating..."
-                    android:textColor="@color/white" />
+                    android:layout_weight="1" />
+
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical"
+                    android:layout_gravity="center_horizontal"
+                    android:gravity="center">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="MOST ASSISTS"
+                        android:textColor="@color/burnt_orange"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/tv_most_assists"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center"
+                        android:layout_marginTop="8dp"
+                        android:text="Calculating..."
+                        android:textColor="@color/white" />
+                </LinearLayout>
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
         <com.google.android.material.card.MaterialCardView
-            android:id="@+id/card_hoop_performance"
+            android:id="@+id/card_usage"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            app:cardBackgroundColor="@color/light_black"
+            app:layout_constraintTop_toBottomOf="@id/player_goal_info">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_gravity="center_horizontal"
+                android:padding="16dp">
+
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical"
+                    android:layout_gravity="center_horizontal"
+                    android:gravity="center">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="MOST POSSESSIONS"
+                        android:textColor="@color/burnt_orange"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/tv_high_usage"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center"
+                        android:layout_marginTop="8dp"
+                        android:text="Calculating..."
+                        android:textColor="@color/white" />
+                </LinearLayout>
+
+                <Space
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1" />
+
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical"
+                    android:layout_gravity="center_horizontal"
+                    android:gravity="center">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="LEAST POSSESSIONS"
+                        android:textColor="@color/burnt_orange"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/tv_low_usage"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center"
+                        android:layout_marginTop="8dp"
+                        android:text="Calculating..."
+                        android:textColor="@color/white" />
+                </LinearLayout>
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/card_goals_scored"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="12dp"
@@ -117,7 +230,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="OFFENSIVE HOOP PERFORMANCE"
+                    android:text="OFFENSIVE HOOP LOCATION"
                     android:textColor="@color/burnt_orange"
                     android:textStyle="bold" />
 
@@ -140,7 +253,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="12dp"
             app:cardBackgroundColor="@color/light_black"
-            app:layout_constraintTop_toBottomOf="@id/card_hoop_performance">
+            app:layout_constraintTop_toBottomOf="@id/card_goals_scored">
 
             <LinearLayout
                 android:layout_width="match_parent"
