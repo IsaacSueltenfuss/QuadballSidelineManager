@@ -578,6 +578,8 @@ class MainViewModel(private val authUser: AuthUser) : ViewModel() {
         val action = GameAction.PenaltyEnded(player.id, slotId, activePossession.id)
         recordAction(action, isLive)
         _playersInBox.value = _playersInBox.value - slotId
+
+        refreshData()
         resetRecordingState()
     }
 
@@ -1259,7 +1261,16 @@ class MainViewModel(private val authUser: AuthUser) : ViewModel() {
                 players.find { it.id == action.playerId }?.let { finalizePenalty(it, action.cardType, action.slotId, false) }
             }
 
-            is GameAction.PenaltyEnded -> finalizePenaltyEnded(action.slotId, false)
+            is GameAction.PenaltyEnded -> {
+                val actualSlot = _playersInBox.value.entries.find { it.value?.id == action.playerId }?.key
+
+                if (actualSlot != null) {
+                    finalizePenaltyEnded(actualSlot, false)
+                } else {
+                    // Fallback: If we can't find them in a slot, just clear the whole map if it's messy
+                    Log.e("SYNC_ERROR", "Could not find player ${action.playerId} in penalty box during sync")
+                }
+            }
 
             is GameAction.ConcededGoal -> {
                 finalizeConcededGoal(action.type, action.hoop,false) // Pass isLive = false
