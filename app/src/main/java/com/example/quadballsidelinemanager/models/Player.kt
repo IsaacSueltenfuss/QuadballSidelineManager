@@ -16,22 +16,26 @@ data class Player(
      *  - Whether the player caught the flag runner this game
      *  - The number of cards (of each type) the player accrued this game
      */
-    var id: String,
-    var name: String,
-    var number: Int,
-    var positions: Set<QuadballPosition>,
-    var primaryPosition: QuadballPosition,
-    var gender: GenderIdentity,
+    val id: String,
+    val name: String,
+    val number: Int,
+    val positions: Set<QuadballPosition>,
+    val primaryPosition: QuadballPosition,
+    val gender: GenderIdentity,
     val photoResId: Int? = null,
-    var isActive: Boolean = true,
+    val isActive: Boolean = true,
 
-    var possessions: MutableList<Possession> = mutableListOf(),
+    // Use List instead of MutableList to enforce immutability
+    val possessions: List<Possession> = emptyList(),
 
-    var caughtFlag: Boolean = false,
+    val caughtFlag: Boolean = false,
 
-    var blueCards: Int = 0,
-    var yellowCards: Int = 0,
-    var redCards: Int = 0
+    val blueCards: Int = 0,
+    val yellowCards: Int = 0,
+    val redCards: Int = 0,
+
+    val isBeatAmount: Int = 0,
+    val beats: Int = 0
 ) {
     val firstName: String
         get() = name.split(" ").firstOrNull() ?: ""
@@ -125,9 +129,12 @@ data class Player(
         get() = if (totalForcedTurnovers > 0 && totalDefensivePossessions > 0) totalForcedTurnovers.toDouble() / totalDefensivePossessions else 0.0
 
     val dodgeballsOnDefense: List<Int>
-        get() = possessions
-            .filter { it.possessionType == PossessionType.DEFENSE && this.id in it.playersOnPitch }
-            .mapNotNull { it.bludgerCount }
+        get() = possessions.filter { pos ->
+            pos.possessionType == PossessionType.DEFENSE &&
+                    pos.playersOnPitch.any { (slotId, playerId) ->
+                        playerId == this.id && slotId.contains("beater", ignoreCase = true)
+                    }
+        }.mapNotNull { it.bludgerCount }
     val numDodgeballsPerPossession: Double
         get() = if (dodgeballsOnDefense.isNotEmpty()) dodgeballsOnDefense.average() else 0.0
 
@@ -142,14 +149,14 @@ data class Player(
     val goalsScoredWhileOnField: List<Possession>
         get() = possessions.filter {
             it.result == PossessionResult.GOAL &&
-                    (this.id in it.playersOnPitch || this.id in it.playersInBox)
+                    (it.playersOnPitch.containsValue(this.id) || it.playersInBox.containsValue(this.id))
         }
     val plusValue: Int
         get() = goalsScoredWhileOnField.size
     val goalsConcededWhileOnField: List<Possession>
         get() = possessions.filter {
             it.result == PossessionResult.CONCEDED_GOAL &&
-                    (this.id in it.playersOnPitch || this.id in it.playersInBox)
+                    (it.playersOnPitch.containsValue(this.id) || it.playersInBox.containsValue(this.id))
         }
     val minusValue: Int
         get() = goalsConcededWhileOnField.size
@@ -173,11 +180,11 @@ data class Player(
      */
     val goalsConcededWhileInBox: Int
         get() = defensivePossessions
-            .filter { this.id in it.playersInBox && it.result == PossessionResult.CONCEDED_GOAL }
+            .filter { it.playersInBox.containsValue(this.id) && it.result == PossessionResult.CONCEDED_GOAL }
             .size
     val goalsScoredWhileInBox: Int
         get() = offensivePossessions
-            .filter { this.id in it.playersInBox && it.result == PossessionResult.GOAL }
+            .filter { it.playersInBox.containsValue(this.id) && it.result == PossessionResult.GOAL }
             .size
     val boxImpact: Int
         get() = goalsScoredWhileInBox - goalsConcededWhileInBox
@@ -192,38 +199,55 @@ data class Player(
     val totalFullDefensivePossessions: Int
         get() = fullDefensivePossessions.size
 
-    /**
-     * FUTURE DIRECTIONS
-     *  - Create stats for the possessions in which the player was on the pitch (not the box)
-     *  - Create stats for the possessions in which none on the team were in the box
-     *  - Revise plus/minus to account for these
-     */
+    companion object {
+        /**
+         * Generates a unique ID: acronym + initials + (optional) number.
+         * Example: "txq" + "IS" -> "txqIS"
+         */
+        fun generateId(
+            teamAcronym: String,
+            firstName: String,
+            lastName: String,
+            existingRoster: List<Player>
+        ): String {
+            val initials = "${firstName.firstOrNull() ?: 'X'}${lastName.firstOrNull() ?: 'X'}"
+                .uppercase()
+            val baseId = "$teamAcronym$initials"
 
-//    val activeOffensivePossessions: List<Possession>
-//        get() = offensivePossessions.filter { this.id in it.playersOnPitch }
-//    val totalActiveOffensivePossessions: Int
-//        get() = activeOffensivePossessions.size
-//
-//    val activeDefensivePossessions: List<Possession>
-//        get() = defensivePossessions.filter { this.id in it.playersOnPitch }
-//    val totalActiveDefensivePossessions: Int
-//        get() = activeDefensivePossessions.size
+            // Count how many people ALREADY have this ID base
+            val count = existingRoster.count { it.id.startsWith(baseId) }
 
-//    val goalsPerFullPossession: Double
-//        get() = if (fullOffensivePossessions.isNotEmpty()) {
-//            totalGoals.toDouble() / totalFullOffensivePossessions // This is wrong since the goals could include possessions where not the whole team was there
-//        } else 0.0
-//
-//    val turnoversPerActivePossession: Double
-//        get() = if (fullDefensivePossessions.isNotEmpty()) {
-//            totalTurnovers.toDouble() / totalFullDefensivePossessions
-//        } else 0.0
-//
-//    val goalsConcededOnFullPossessions: Int
-//        get() = if (fullDefensivePossessions.isNotEmpty()) {
-//            totalTurnovers
-//        } else 0
+            return if (count == 0) baseId else "$baseId${count + 1}"
+        }
+
+        fun create(
+            name: String,
+            number: Int,
+            primaryPosition: QuadballPosition,
+            positions: MutableSet<QuadballPosition>,
+            gender: GenderIdentity,
+            teamAcronym: String,
+            existingRoster: List<Player>
+        ): Player {
+            val nameParts = name.split(" ")
+            val first = nameParts.getOrNull(0) ?: "Player"
+            val last = nameParts.getOrNull(1) ?: "Unknown"
+
+            val finalPositions = positions.toMutableSet().apply {
+                if (QuadballPosition.KEEPER in this) add(QuadballPosition.CHASER)
+            }
+
+            return Player(
+                id = generateId(teamAcronym, first, last, existingRoster),
+                name = name,
+                number = number,
+                positions = finalPositions,
+                primaryPosition = primaryPosition,
+                gender = gender
+            )
+        }
+    }
 }
 
-enum class QuadballPosition { KEEPER, CHASER, BEATER, SEEKER, UTILITY }
+enum class QuadballPosition { KEEPER, CHASER, BEATER, SEEKER }
 enum class GenderIdentity { MALE, FEMALE, NON_BINARY, OTHER }

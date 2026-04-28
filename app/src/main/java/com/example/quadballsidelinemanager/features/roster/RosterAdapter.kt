@@ -10,11 +10,13 @@ import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
+import com.bumptech.glide.signature.ObjectKey
 import com.example.quadballsidelinemanager.R
 import com.example.quadballsidelinemanager.databinding.PlayerCardBinding
 import com.example.quadballsidelinemanager.models.Player
 import com.example.quadballsidelinemanager.models.QuadballPosition
 import com.example.quadballsidelinemanager.SortType
+import com.example.quadballsidelinemanager.utils.Storage
 
 class RosterAdapter(private val onPlayerClick: (Player) -> Unit,
                     private val onPlayerLongClick: (View, Player) -> Boolean) :
@@ -62,12 +64,22 @@ class RosterAdapter(private val onPlayerClick: (Player) -> Unit,
                 true
             }
 
+            Glide.with(this.root).clear(this.playerPhoto)
+            this.playerPhoto.setImageResource(R.drawable.ic_player_placeholder)
+
             Log.d("PHOTO_DEBUG", "Player: ${player.name} | ID: ${player.photoResId}")
-            Glide.with(holder.itemView.context)
-                .load(player.photoResId ?: R.drawable.ic_player_placeholder)
-                .signature(com.bumptech.glide.signature.ObjectKey(player.photoResId ?: 0))
-                .centerCrop()
-                .into(playerPhoto)
+
+            val storage = Storage()
+            storage.getPlayerHeadshot(player.id).addOnSuccessListener { uri ->
+                Glide.with(this.root)
+                    .load(uri)
+                    .placeholder(R.drawable.ic_player_placeholder)
+                    .centerCrop()
+                    .into(this.playerPhoto)
+            }.addOnFailureListener {
+                // Both extensions failed, Glide will stay on the placeholder
+                Log.e("STORAGE", "No headshot found for ${player.id} (.jpg or .jpeg)")
+            }
 
             holder.binding.statBar.text = when(displayMode) {
                 SortType.POSSESSIONS -> player.totalPossessions.toString() + " POSSESSIONS"
@@ -83,7 +95,7 @@ class RosterAdapter(private val onPlayerClick: (Player) -> Unit,
                 QuadballPosition.CHASER -> R.color.white // White
                 QuadballPosition.BEATER -> R.color.black // Black
                 QuadballPosition.SEEKER -> R.color.yellow // Yellow
-                QuadballPosition.UTILITY -> R.color.red // Red
+                else -> R.color.red // Red
             }
 
             val textColor = when (player.primaryPosition) {

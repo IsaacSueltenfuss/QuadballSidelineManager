@@ -12,48 +12,6 @@ data class Team(
     var penaltyBoxIds: MutableSet<String> = mutableSetOf()
 ) {
 
-    /**
-     * Generates a unique ID: acronym + initials + (optional) number.
-     * Example: "txq" + "IS" -> "txqIS"
-     */
-    fun generatePlayerId(firstName: String, lastName: String): String {
-        val initials = "${firstName.firstOrNull() ?: 'X'}${lastName.firstOrNull() ?: 'X'}"
-            .uppercase()
-        val baseId = "$teamAcronym$initials"
-
-        // Find how many players already have these initials on this team
-        val count = roster.count { it.id.startsWith(baseId) }
-
-        return if (count == 0) baseId else "$baseId${count + 1}"
-    }
-
-    /**
-     * Adds a new player to the roster using the ID generator.
-     */
-    fun addNewPlayer(name: String, number: Int, positions: MutableSet<QuadballPosition>, gender: GenderIdentity, photoPath: Int? = null) {
-        val nameParts = name.split(" ")
-        val firstName = nameParts.getOrNull(0) ?: "Player"
-        val lastName = nameParts.getOrNull(1) ?: "Unknown"
-
-        val posSet = positions.apply {
-            if (QuadballPosition.KEEPER in this) add(QuadballPosition.CHASER)
-        }
-
-        val newId = generatePlayerId(firstName, lastName)
-
-        val newPlayer = Player(
-            id = newId,
-            name = name,
-            number = number,
-            positions = posSet,
-            primaryPosition = positions.first(),
-            gender = gender,
-            photoResId = photoPath,
-            isActive = true
-        )
-        roster.add(newPlayer)
-    }
-
     fun getPlayer(id: String): Player {
         return roster.find { it.id == id }
             ?: throw IllegalArgumentException("Player $id not found on ${this.teamName}")
@@ -61,14 +19,44 @@ data class Team(
 
     /**
      * Distributes a completed possession to all players involved (Pitch + Box).
+     * Uses immutable updates to ensure StateFlow observers detect changes.
      */
     fun recordPossession(completedPossession: Possession) {
-        activeLineupIds = completedPossession.playersOnPitch.toMutableSet()
-        penaltyBoxIds = completedPossession.playersInBox.toMutableSet()
+        activeLineupIds = completedPossession.playersOnPitch.values.toMutableSet()
+        penaltyBoxIds = completedPossession.playersInBox.values.toMutableSet()
         val involvedIds = activeLineupIds + penaltyBoxIds
 
-        roster.filter { it.id in involvedIds }.forEach { player ->
-            player.possessions.add(completedPossession)
+        Log.d("POSSESSION_DEBUG", "FINALIZING: ${completedPossession.id} | Result: ${completedPossession.result} | Involved IDs: $involvedIds")
+
+        for (i in roster.indices) {
+            val player = roster[i]
+            if (player.id in involvedIds) {
+                Log.d("POSSESSION_DEBUG", "Successfully added possession to player: ${player.lastName}")
+                // Create a NEW list instance and a NEW player instance
+                val updatedPossessions = player.possessions.toMutableList().apply { add(completedPossession) }
+                roster[i] = player.copy(possessions = updatedPossessions)
+            }
+        }
+    }
+
+    /**
+     * Removes a possession from all involved players (Pitch + Box).
+     * Uses immutable updates to ensure StateFlow observers detect changes.
+     */
+    fun deletePossession(possession: Possession) {
+        activeLineupIds = possession.playersOnPitch.values.toMutableSet()
+        penaltyBoxIds = possession.playersInBox.values.toMutableSet()
+        val involvedIds = activeLineupIds + penaltyBoxIds
+
+        for (i in roster.indices) {
+            val player = roster[i]
+            if (player.id in involvedIds) {
+                Log.d("UNDO_DEBUG", "Player ${player.id} has ${player.possessions.size} possessions played.")
+                // Filter into a new list and create a NEW player instance
+                val updatedPossessions = player.possessions.filter { it.id != possession.id }.toMutableList()
+                roster[i] = player.copy(possessions = updatedPossessions)
+                Log.d("UNDO_DEBUG", "Player ${player.id} had possession ${possession.id} removed. Now: ${roster[i].possessions.size}")
+            }
         }
     }
 }

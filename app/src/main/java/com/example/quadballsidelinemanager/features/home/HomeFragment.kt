@@ -1,10 +1,12 @@
 package com.example.quadballsidelinemanager.features.home
 
+import android.app.AlertDialog
 import android.os.Bundle
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.EditText
 import androidx.fragment.app.Fragment
 import com.example.quadballsidelinemanager.databinding.FragmentHomeBinding
 import java.text.SimpleDateFormat
@@ -18,16 +20,22 @@ import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.fragment.findNavController
 import com.example.quadballsidelinemanager.EnableType
 import com.example.quadballsidelinemanager.GamePhase
+import com.example.quadballsidelinemanager.MainActivity
 import com.example.quadballsidelinemanager.MainViewModel
+import com.example.quadballsidelinemanager.MainViewModelFactory
 import com.example.quadballsidelinemanager.R
 import com.example.quadballsidelinemanager.models.PossessionType
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 import kotlin.getValue
 
 class HomeFragment : Fragment() {
 
-    private val viewModel: MainViewModel by activityViewModels()
+    private val viewModel: MainViewModel by activityViewModels {
+        MainViewModelFactory((requireActivity() as MainActivity).authUser)
+    }
     private var _binding: FragmentHomeBinding? = null
     // This property is only valid between onCreateView and onDestroyView.
     private val binding get() = _binding!!
@@ -53,11 +61,23 @@ class HomeFragment : Fragment() {
 
         // Updates game phase after a click to btnGamePhase
         binding.btnGamePhase.setOnClickListener {
-            if (viewModel.gamePhase.value == GamePhase.FIRST_HALF) {
-                viewModel.updateGamePhase(GamePhase.SECOND_HALF)
+            if (viewModel.gamePhase.value == GamePhase.DEFAULT) {
+                viewModel.updateGamePhase(GamePhase.SEEKER_FLOOR)
             } else {
-                viewModel.updateGamePhase(GamePhase.FIRST_HALF)
+                viewModel.updateGamePhase(GamePhase.DEFAULT)
             }
+        }
+
+        // Confirms a flag catch and ends the Seeker Floor
+        binding.btnOppFlagCatch.setOnClickListener {
+            MaterialAlertDialogBuilder(requireContext())
+                .setTitle("Confirm Opponent Catch?")
+                .setMessage("This will add 35 points to the opponent and end the Seeker Floor.")
+                .setPositiveButton("Confirm") { _, _ ->
+                    viewModel.finalizeOpponentFlagCatch(true)
+                }
+                .setNegativeButton("Cancel", null)
+                .show()
         }
 
         // Launches coroutines that are automatically canceled upon lifecycle destruction
@@ -67,13 +87,21 @@ class HomeFragment : Fragment() {
                 launch {
                     viewModel.gamePhase.collect { phase ->
                         binding.btnGamePhase.text = when (phase) {
-                            GamePhase.FIRST_HALF -> "FIRST PERIOD"
-                            GamePhase.SECOND_HALF -> "SECOND PERIOD"
+                            GamePhase.DEFAULT -> "FIRST PERIOD"
+                            GamePhase.SEEKER_FLOOR -> "SEEKER FLOOR"
                             else -> "OTHER"
                         }
                     }
                 }
 
+                // Updates the team information
+                launch {
+                    viewModel.opposingTeam.collect { oppName ->
+                        binding.teamInfo.text = "${viewModel.currentTeam.value.teamAcronym.uppercase()} VS. ${oppName.uppercase()}"
+                    }
+                }
+
+                // Updates the UI state based on whether the pitch is enabled
                 launch {
                     viewModel.pitchEnabled.collect { enableType ->
                         if (enableType == EnableType.GAME_IN_PROGRESS) {
@@ -86,7 +114,7 @@ class HomeFragment : Fragment() {
                             binding.btnGameLoad.visibility = View.GONE
 
                             binding.btnGameStart.setOnClickListener {
-                                showEndGameDialog()
+                                viewModel.exitGame()
                             }
                         } else if (enableType == EnableType.GAME_LOADED) {
                             binding.btnGameLoad.text = "EXIT GAME"
@@ -98,27 +126,65 @@ class HomeFragment : Fragment() {
                             binding.btnGameStart.visibility = View.GONE
 
                             binding.btnGameLoad.setOnClickListener {
-                                showExitGameDialog()
+                                viewModel.exitGame()
                             }
                         } else {
                             binding.btnGameStart.visibility = View.VISIBLE
                             binding.btnGameLoad.visibility = View.VISIBLE
 
                             binding.btnGameStart.text = "START GAME"
-                            binding.btnGameLoad.text = "LOAD GAME"
+                            binding.btnGameLoad.text = "JOIN GAME"
 
                             binding.teamInfo.visibility = View.GONE
                             binding.streamLayout.visibility = View.GONE
                             binding.btnGamePhase.visibility = View.GONE
 
                             binding.btnGameStart.setOnClickListener {
-                                showStartGameDialog(false)
+                                showStartGameDialog()
                             }
 
                             binding.btnGameLoad.setOnClickListener {
-                                showStartGameDialog(true) // UPDATE THIS
+                                val input = EditText(requireContext())
+                                input.hint = "TXQvsUTSA_2026-04-27"
+
+                                AlertDialog.Builder(requireContext())
+                                    .setTitle("Join Existing Game")
+                                    .setView(input)
+                                    .setPositiveButton("Join") { _, _ ->
+                                        val id = input.text.toString().trim()
+                                        if (id.isNotEmpty()) {
+                                            viewModel.joinLiveGame(id)
+                                        }
+                                    }
+                                    .setNegativeButton("Cancel", null)
+                                    .show()
                             }
                         }
+                    }
+                }
+
+                // Updates the UI state based on the game phase
+                launch {
+                    combine(
+                        viewModel.gamePhase,
+                        viewModel.pitchEnabled,
+                        viewModel.isFlagCaught
+                    ) { phase, enableType, isCaught ->
+                        Triple(phase, enableType, isCaught)
+                    }.collect { (phase, enableType, isCaught) ->
+                        val isGameRunning = enableType == EnableType.GAME_IN_PROGRESS
+
+                        binding.btnGamePhase.visibility = if (
+                            isGameRunning &&
+                            phase == GamePhase.DEFAULT &&
+                            !isCaught
+                        ) View.VISIBLE else View.GONE
+                        binding.btnGamePhase.text = "ENTER SEEKER FLOOR"
+
+                        binding.btnOppFlagCatch.visibility = if (
+                            isGameRunning &&
+                            phase == GamePhase.SEEKER_FLOOR
+                        ) View.VISIBLE else View.GONE
                     }
                 }
             }
@@ -130,7 +196,7 @@ class HomeFragment : Fragment() {
         _binding = null
     }
 
-    private fun showStartGameDialog(isLoad: Boolean) {
+    private fun showStartGameDialog() {
         val dialogView = LayoutInflater.from(requireContext()).inflate(R.layout.dialog_game_setup, null)
         val etOpponent = dialogView.findViewById<com.google.android.material.textfield.TextInputEditText>(R.id.etOpponentName)
         val etStream = dialogView.findViewById<com.google.android.material.textfield.TextInputEditText>(R.id.etStreamLink)
@@ -140,50 +206,21 @@ class HomeFragment : Fragment() {
             .setTitle("Tournament Game Setup")
             .setView(dialogView)
             .setPositiveButton("Start Whistle") { _, _ ->
-                // 1. Save Team Name
+                // Save Team Name
                 val teamName = etOpponent.text.toString()
                 viewModel.updateOpposingTeam(if (teamName.isBlank()) "Opponent" else teamName)
 
-                // 2. Set Possession (Offense or Defense)
+                // Set Possession (Offense or Defense)
                 if (toggleGroup.checkedButtonId == R.id.btnStartDefense) {
                     // If they picked defense, toggle away from the default Offense
                     viewModel.toggleStartingSide()
                 }
 
-                // 3. Enable the Pitch and Navigate
-                if (isLoad) {
-                    viewModel.loadGame()
-                } else {
-                    viewModel.startGame()
-                }
+                // Enable the Pitch and Navigate
+                viewModel.startGame()
 
-                // Optional: Auto-navigate to Pitch once started
                 val bottomNav = requireActivity().findViewById<com.google.android.material.bottomnavigation.BottomNavigationView>(R.id.bottom_nav)
                 bottomNav.selectedItemId = R.id.dest_pitch
-            }
-            .setNegativeButton("Cancel", null)
-            .show()
-    }
-
-    private fun showEndGameDialog() {
-        MaterialAlertDialogBuilder(requireContext())
-            .setTitle("End Game?")
-            .setMessage("This will stop recording and lock the stats. Make sure you're ready to export!")
-            .setPositiveButton("End & Save") { _, _ ->
-                viewModel.stopGame() // This sets pitchEnabled to false
-                // Here is where you'd trigger your Firebase Export logic!
-            }
-            .setNegativeButton("Cancel", null)
-            .show()
-    }
-
-    private fun showExitGameDialog() {
-        MaterialAlertDialogBuilder(requireContext())
-            .setTitle("Exit Game?")
-            .setMessage("This will stop playback. Statistics are saved!")
-            .setPositiveButton("Exit") { _, _ ->
-                viewModel.stopGame() // This sets pitchEnabled to false
-                // Here is where you'd trigger your Firebase Export logic!
             }
             .setNegativeButton("Cancel", null)
             .show()

@@ -33,6 +33,19 @@
         app:layout_constraintStart_toStartOf="parent"
         android:layout_margin="16dp" />
 
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/fab_undo"
+        android:visibility="gone"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_margin="24dp"
+        android:contentDescription="Undo"
+        android:src="@drawable/ic_undo"
+        app:backgroundTint="#BF5700"
+        app:layout_constraintTop_toBottomOf="@+id/btn_opp_turnover"
+        app:layout_constraintStart_toStartOf="parent"
+        app:tint="@color/white" />
+
     <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/pitch_field"
         android:layout_width="0dp"

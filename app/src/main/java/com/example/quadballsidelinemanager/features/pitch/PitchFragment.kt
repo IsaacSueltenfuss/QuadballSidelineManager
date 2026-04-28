@@ -25,18 +25,29 @@ import android.widget.LinearLayout
 import com.example.quadballsidelinemanager.GamePhase
 import android.widget.FrameLayout
 import androidx.lifecycle.repeatOnLifecycle
+import com.example.quadballsidelinemanager.AuthType
+import com.example.quadballsidelinemanager.EnableType
+import com.example.quadballsidelinemanager.MainActivity
+import com.example.quadballsidelinemanager.MainViewModelFactory
 import com.example.quadballsidelinemanager.RecordingState
+import com.example.quadballsidelinemanager.models.CardType
 import com.example.quadballsidelinemanager.models.HoopID
 import com.example.quadballsidelinemanager.models.PossessionType
 import com.example.quadballsidelinemanager.models.QuadballPosition
 import com.example.quadballsidelinemanager.models.ShotType
+import com.example.quadballsidelinemanager.utils.Storage
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.combine
 
 class PitchFragment : Fragment() {
 
     private var _binding: FragmentPitchBinding? = null
     private val binding get() = _binding!!
 
-    private val viewModel: MainViewModel by activityViewModels()
+    private val viewModel: MainViewModel by activityViewModels {
+        MainViewModelFactory((requireActivity() as MainActivity).authUser)
+    }
 
     // Creates a Drag Listener object to be passed into each field slot
     private val slotDragListener = View.OnDragListener { v, event ->
@@ -51,12 +62,13 @@ class PitchFragment : Fragment() {
             // Drag has entered bounding box of a view
             DragEvent.ACTION_DRAG_ENTERED -> {
                 Log.d("DRAG_DEBUG", "Entered: $targetSlotId")
-                v.alpha = 0.5f
+                val originalAlpha = v.alpha
+                v.alpha = v.alpha / 2
                 true
             }
             // Drag has exited bounding box of a view
             DragEvent.ACTION_DRAG_EXITED -> {
-                v.alpha = 1.0f
+                v.alpha = v.alpha * 2
                 true
             }
             // User has released drag shadow and it is within the bounding box of a view
@@ -96,7 +108,7 @@ class PitchFragment : Fragment() {
                     // CASE 2: ASSIGNING FROM BENCH
                     pendingPlayer != null -> {
                         if (pendingPlayer.positions.contains(requiredPosForTarget)) {
-                            viewModel.assignPlayerToSlot(pendingPlayer, targetSlotId)
+                            viewModel.assignPlayerToSlot(pendingPlayer, targetSlotId, true)
                             v.performHapticFeedback(android.view.HapticFeedbackConstants.CONFIRM)
                         } else {
                             android.widget.Toast.makeText(requireContext(),
@@ -114,6 +126,8 @@ class PitchFragment : Fragment() {
             }
             // Drag and drop operation has concluded
             DragEvent.ACTION_DRAG_ENDED -> {
+                highlightPlayers(false, null, setOf(QuadballPosition.KEEPER, QuadballPosition.CHASER,
+                    QuadballPosition.BEATER, QuadballPosition.SEEKER))
                 v.alpha = 1.0f
                 Log.d("DRAG_DEBUG", "DRAG ENDED - Result: ${event.result}")
                 true
@@ -143,13 +157,7 @@ class PitchFragment : Fragment() {
                 // Observes changes in the gamePhase, changing the visibility of the seeker slot
                 launch {
                     viewModel.gamePhase.collect { phase ->
-                        binding.slotSeeker.root.visibility = if (phase == GamePhase.SECOND_HALF) View.VISIBLE else View.GONE
-                    }
-                }
-
-                launch {
-                    viewModel.statEventMessage.collect { message ->
-                        android.widget.Toast.makeText(requireContext(), message, android.widget.Toast.LENGTH_LONG).show()
+                        binding.slotSeeker.root.visibility = if (phase == GamePhase.SEEKER_FLOOR) View.VISIBLE else View.GONE
                     }
                 }
 
@@ -174,7 +182,7 @@ class PitchFragment : Fragment() {
                         binding.btnCancelRecording.visibility = if (state is RecordingState.Idle) View.GONE else View.VISIBLE
 
                         when (state) {
-                            is RecordingState.SelectingAction -> showActionMenu(state.player)
+                            is RecordingState.SelectingAction -> showActionMenu(state.player, state.slotId)
                             is RecordingState.SelectingShotResult -> showShotResultDialog()
                             is RecordingState.SelectingHoop ->  {
                                 highlightOpposingHoops(true)
@@ -190,17 +198,28 @@ class PitchFragment : Fragment() {
                                 showShotTypeMenu(state.isGood)
                             }
                             is RecordingState.SelectingAssistantDecision -> showAssistDecisionDialog()
-                            is RecordingState.SelectingAssistant -> highlightTeammates(true, state.player.id)
+                            is RecordingState.SelectingAssistant -> highlightPlayers(true, state.player.id, setOf(
+                                QuadballPosition.CHASER, QuadballPosition.KEEPER))
 
                             is RecordingState.SelectingConcededGoalType -> {
                                 // Show the same menu, but have it call finalizeConcededGoal
-                                showConcededGoalTypeMenu()
+                                showConcededGoalTypeMenu(state.hoopId)
                             }
 
                             is RecordingState.Idle -> {
-                                highlightTeammates(false, "")
+                                highlightPlayers(false, "", setOf(QuadballPosition.CHASER,
+                                    QuadballPosition.KEEPER, QuadballPosition.BEATER,
+                                    QuadballPosition.SEEKER))
                                 highlightOpposingHoops(false)
                                 // Dismiss any open menus
+                            }
+
+                            is RecordingState.RecordingBludgers -> {
+                                showBludgerDialog()
+                            }
+
+                            is RecordingState.SelectingPenaltyType -> {
+                                showPenaltyCardDialog(state.player, state.slotId)
                             }
                         }
                     }
@@ -222,9 +241,9 @@ class PitchFragment : Fragment() {
                         val hoopSize = if (expanded) 25.dpToPx() else 50.dpToPx()
 
                         val newFlagSize = if (expanded) 25.dpToPx() else 45.dpToPx()
-                        val newBadgeTextSize = if (expanded) 5f else 8f
-                        val newTopMargin = if (expanded) 6.dpToPx() else 10.dpToPx()
-                        val newEndMargin = if (expanded) (-1).dpToPx() else 0.dpToPx()
+                        val newBadgeTextSize = if (expanded) 10f else 14f
+                        val newTopMargin = if (expanded) 2.dpToPx() else 4.dpToPx()
+                        val newEndMargin = if (expanded) 4.dpToPx() else 6.dpToPx()
 
                         val allSlots = listOf(
                             binding.slotKeeper, binding.slotChaserTop,
@@ -271,18 +290,69 @@ class PitchFragment : Fragment() {
 
                 // Observes changes in pitchOccupants and updates the UI for each slot when there is a change
                 launch {
-                    viewModel.pitchOccupants.collect { occupants ->
-                        updateSlotUi(binding.slotKeeper, occupants["slot_keeper"], "KEEPER")
-                        updateSlotUi(binding.slotChaserTop, occupants["slot_chaser_top"], "CHASER")
-                        updateSlotUi(binding.slotChaserHoopsLeft, occupants["slot_chaser_hoops_left"], "CHASER")
-                        updateSlotUi(binding.slotChaserHoopsRight, occupants["slot_chaser_hoops_right"], "CHASER")
-                        updateSlotUi(binding.slotBeater1, occupants["slot_beater_1"], "BEATER")
-                        updateSlotUi(binding.slotBeater2, occupants["slot_beater_2"], "BEATER")
-                        updateSlotUi(binding.slotSeeker, occupants["slot_seeker"], "SEEKER")
+                    viewModel.pitchOccupants.combine(viewModel.playersInBox) { occupants, boxedMap ->
+                        occupants to boxedMap
+                    }.collect { (occupants, boxedMap) ->
+                        // Pass whether the SPECIFIC slot is in the boxedMap
+                        updateSlotUi(binding.slotKeeper, occupants["slot_keeper"], boxedMap.containsKey("slot_keeper"), "KEEPER")
+                        updateSlotUi(binding.slotChaserTop, occupants["slot_chaser_top"], boxedMap.containsKey("slot_chaser_top"), "CHASER")
+                        updateSlotUi(binding.slotChaserHoopsLeft, occupants["slot_chaser_hoops_left"], boxedMap.containsKey("slot_chaser_hoops_left"), "CHASER")
+                        updateSlotUi(binding.slotChaserHoopsRight, occupants["slot_chaser_hoops_right"], boxedMap.containsKey("slot_chaser_hoops_right"), "CHASER")
+                        updateSlotUi(binding.slotBeater1, occupants["slot_beater_1"], boxedMap.containsKey("slot_beater_1"), "BEATER")
+                        updateSlotUi(binding.slotBeater2, occupants["slot_beater_2"], boxedMap.containsKey("slot_beater_2"), "BEATER")
+                        updateSlotUi(binding.slotSeeker, occupants["slot_seeker"], boxedMap.containsKey("slot_seeker"), "SEEKER")
                     }
                 }
+
+                launch {
+                    viewModel.gameLog.collect { gameLog ->
+                        if (gameLog.isNotEmpty()) {
+                            binding.fabUndo.visibility = View.VISIBLE
+                        } else {
+                            binding.fabUndo.visibility = View.GONE
+                        }
+                    }
+                }
+
+                launch {
+                    viewModel.pendingPlayer.combine(viewModel.pendingSlot) { pendingPlayer, pendingSlot ->
+                        pendingPlayer to pendingSlot
+                    }.collect { (pendingPlayer, pendingSlot) ->
+                        val allPositions = setOf(QuadballPosition.KEEPER, QuadballPosition.CHASER,
+                            QuadballPosition.BEATER, QuadballPosition.SEEKER)
+                        if (pendingPlayer != null && pendingSlot == null) {
+                            Log.d("HIGHLIGHT_DEBUG", "Pending Player: ${pendingPlayer.id}, Pending Slot: $pendingSlot, Pending Positions: ${pendingPlayer.positions}, Updated Position List: ${allPositions - pendingPlayer.positions}")
+                            highlightPlayers(true, null, pendingPlayer.positions)
+                        } else if (pendingPlayer == null) {
+                            highlightPlayers(false, null, allPositions)
+                        }
+                    }
+                }
+
+//                launch {
+//                    // Doesn't work
+//                    viewModel.pitchOccupants.collect {
+//                        Log.d("PITCH_DEBUG", "Occupant collection start. | Game Phase: ${viewModel.gamePhase.value} | Pitch Enabled: ${viewModel.pitchEnabled.value}")
+//                        if (viewModel.gamePhase.value == GamePhase.SEEKER_FLOOR) {
+//                            if (viewModel.pitchOccupants.value.size == 7) {
+//                                viewModel.togglePitchEnabled(EnableType.GAME_IN_PROGRESS)
+//                            } else {
+//                                viewModel.togglePitchEnabled(EnableType.NONE)
+//                            }
+//                        } else if (viewModel.gamePhase.value == GamePhase.DEFAULT) {
+//                            if (viewModel.pitchOccupants.value.size == 6) {
+//                                viewModel.togglePitchEnabled(EnableType.GAME_IN_PROGRESS)
+//                            } else {
+//                                viewModel.togglePitchEnabled(EnableType.NONE)
+//                            }
+//                        }
+//                        Log.d("PITCH_DEBUG", "Occupant collection end. | Game Phase: ${viewModel.gamePhase.value} | Pitch Enabled: ${viewModel.pitchEnabled.value}")
+//                    }
+//                }
             }
         }
+
+        binding.fabUndo.setOnClickListener { viewModel.undoLastAction() }
 
         // When the FAB is clicked, toggle the roster visibility
         binding.fabToggleBench.setOnClickListener { viewModel.toggleBenchVisibility() }
@@ -328,7 +398,7 @@ class PitchFragment : Fragment() {
 
                 // If a player was clicked on in the bench then this tap completes the substitution
                 if (viewModel.pendingPlayer.value != null) {
-                    viewModel.assignPlayerToSlot(viewModel.pendingPlayer.value!!, slotId)
+                    viewModel.assignPlayerToSlot(viewModel.pendingPlayer.value!!, slotId, true)
                 } else if (viewModel.pendingSlot.value != null) {
                     val currentMap = viewModel.pitchOccupants.value.toMap()
                     if (currentMap[viewModel.pendingSlot.value] == null && currentMap[slotId] == null) {
@@ -357,7 +427,7 @@ class PitchFragment : Fragment() {
                     }
                 } else {
                     Log.d("PITCH", "Slot $slotId clicked")
-                    viewModel.initiateAction(occupant)
+                    viewModel.initiateAction(occupant, slotId)
                 }
             }
         }
@@ -369,12 +439,19 @@ class PitchFragment : Fragment() {
     private fun updateSlotUi(
         slotBinding: ItemFieldSlotBinding,
         player: Player?,
+        isBoxed: Boolean,
         defaultRole: String
     ) {
-        // Updates the position badge text in the top corner of the slot
-        slotBinding.positionBadgeText.text = defaultRole.uppercase()
+        if (isAdded && context != null && !isDetached) {
+            Glide.with(this)
+                .clear(slotBinding.ivPlayerPhoto)
+        }
+        slotBinding.root.alpha = 1.0f
 
-        // Gets the color of the given position for the slot and updates the flag to be that color
+        slotBinding.positionFlag.visibility = View.VISIBLE
+        slotBinding.positionBadgeText.visibility = View.VISIBLE
+        slotBinding.positionBadgeText.text = defaultRole.take(1) // Just 'K', 'C', etc.
+
         val positionColor = when (defaultRole.uppercase()) {
             "KEEPER" -> Color.GREEN
             "CHASER" -> Color.WHITE
@@ -385,26 +462,46 @@ class PitchFragment : Fragment() {
         slotBinding.positionFlag.backgroundTintList = android.content.res.ColorStateList.valueOf(positionColor)
         slotBinding.positionBadgeText.setTextColor(if (positionColor == Color.BLACK) Color.WHITE else Color.BLACK)
 
-        // If the slot is occupied, add the player's name and photo
-        if (player != null) {
-            slotBinding.tvSlotRole.text = player.name.uppercase()
-            slotBinding.tvSlotRole.setTextColor(Color.WHITE)
-            slotBinding.root.setCardBackgroundColor(ContextCompat.getColor(requireContext(), R.color.burnt_orange))
-            slotBinding.root.strokeColor = Color.WHITE
-            slotBinding.root.strokeWidth = 2
+        if (player == null) {
+            slotBinding.root.setCardBackgroundColor(Color.parseColor("#BF5700"))
+            slotBinding.root.strokeColor = Color.parseColor("#40FFFFFF") // Faint border
 
-            // Loads the player's photo into the slot
-            Glide.with(this)
-                .load(player.photoResId ?: R.drawable.ic_player_placeholder)
-                .into(slotBinding.ivPlayerPhoto)
-        } else {
-            // If the slot is empty, update the slot and clears the photo
             slotBinding.tvSlotRole.text = defaultRole
-            slotBinding.tvSlotRole.setTextColor(Color.GRAY)
+            slotBinding.tvSlotRole.setTextColor(Color.parseColor("#80FFFFFF")) // Semi-transparent white
             slotBinding.ivPlayerPhoto.setImageDrawable(null)
-            slotBinding.ivPlayerPhoto.setImageResource(0)
-            slotBinding.root.setCardBackgroundColor(Color.parseColor("#26FFFFFF"))
-            slotBinding.root.strokeColor = Color.parseColor("#40FFFFFF")
+        } else {
+            slotBinding.root.setCardBackgroundColor(Color.parseColor("#121212")) // Dark charcoal
+            slotBinding.root.strokeColor = Color.WHITE
+            slotBinding.root.strokeWidth = 1.dpToPx()
+
+            slotBinding.root.alpha = if (isBoxed) 0.3f else 1.0f
+            Log.e("PENALTY_TRACE", "PLAYER NOW HAS ${if (isBoxed) 0.3 else 1.0} transparency.")
+
+            if (isBoxed) {
+                slotBinding.tvSlotRole.text = "BOXED: ${player.lastName.uppercase()}"
+                slotBinding.tvSlotRole.setTextColor(Color.YELLOW) // Or Red/Blue based on card
+            } else {
+                slotBinding.tvSlotRole.text = player.lastName.uppercase()
+                slotBinding.tvSlotRole.setTextColor(Color.WHITE)
+            }
+
+            // Set the placeholder BEFORE the network call starts
+            slotBinding.ivPlayerPhoto.setImageResource(R.drawable.ic_player_placeholder)
+
+            val storage = Storage()
+
+            storage.getPlayerHeadshot(player.id).addOnSuccessListener { uri ->
+                if (isAdded && context != null && !isDetached) {
+                    Glide.with(this)
+                        .load(uri)
+                        .placeholder(R.drawable.ic_player_placeholder)
+                        .centerCrop()
+                        .into(slotBinding.ivPlayerPhoto)
+                }
+            }.addOnFailureListener {
+                // Both extensions failed, Glide will stay on the placeholder
+                Log.e("STORAGE", "No headshot found for ${player.id} (.jpg or .jpeg)")
+            }
         }
     }
 
@@ -468,12 +565,49 @@ class PitchFragment : Fragment() {
     /**
      * Shows menu for action attribution
      */
-    private fun showActionMenu(player: Player) {
-        val actions = arrayOf("Shot", "Turnover", "Turnover Forced", "Penalty")
+    private fun showActionMenu(player: Player, slotId: String) {
+        val side = viewModel.currentPossessionType.value
+        val actions = mutableListOf<String>()
+
+        if (viewModel.playersInBox.value.containsKey(slotId)) {
+            actions.add("PENALTY ENDED")
+        } else {
+            when (player.primaryPosition) {
+                QuadballPosition.SEEKER -> {
+                    actions.add("CAUGHT FLAG")
+                }
+
+                QuadballPosition.CHASER, QuadballPosition.KEEPER -> {
+                    if (side == PossessionType.OFFENSE) {
+                        actions.addAll(listOf("SHOT", "TURNOVER"))
+                    } else {
+                        actions.addAll(listOf("TURNOVER FORCED"))
+                    }
+                }
+
+                QuadballPosition.BEATER -> {
+                    if (side == PossessionType.DEFENSE) {
+                        actions.add("TURNOVER FORCED")
+                    }
+                }
+            }
+        actions.add("PENALTY")
+        }
+
+        if (viewModel.userAuthLevel.value == AuthType.SECONDARY_COACH) {
+            actions.clear()
+            actions.addAll(listOf("IS BEAT", "PENALTY"))
+            if (slotId.contains("beater")) {
+                actions.add("BEAT")
+            }
+        } else if (viewModel.userAuthLevel.value == AuthType.NONE) {
+            viewModel.resetRecordingState()
+            return
+        }
 
         com.google.android.material.dialog.MaterialAlertDialogBuilder(requireContext())
             .setTitle("Action: ${player.lastName.uppercase()}")
-            .setItems(actions) { _, which ->
+            .setItems(actions.toTypedArray()) { _, which ->
                 val selectedAction = actions[which]
                 viewModel.selectAction(selectedAction)
             }
@@ -540,12 +674,24 @@ class PitchFragment : Fragment() {
             .show()
     }
 
-    private fun highlightTeammates(shouldHighlight: Boolean, scorerId: String) {
-        val allSlots = listOf(
-            binding.slotKeeper, binding.slotChaserTop,
-            binding.slotChaserHoopsLeft, binding.slotChaserHoopsRight,
-            binding.slotBeater1, binding.slotBeater2, binding.slotSeeker
-        )
+
+    fun highlightPlayers(shouldHighlight: Boolean, playerId: String?, posToInclude: Set<QuadballPosition>) {
+        val validSlots = mutableListOf<ItemFieldSlotBinding>()
+        for (pos in posToInclude) {
+            validSlots += when (pos) {
+                QuadballPosition.CHASER -> listOf(
+                    binding.slotChaserTop,
+                    binding.slotChaserHoopsLeft,
+                    binding.slotChaserHoopsRight
+                )
+
+                QuadballPosition.KEEPER -> listOf(binding.slotKeeper)
+                QuadballPosition.BEATER -> listOf(binding.slotBeater1, binding.slotBeater2)
+                else -> listOf(binding.slotSeeker)
+            }
+        }
+
+        val allSlots = listOf(binding.slotKeeper, binding.slotChaserTop, binding.slotChaserHoopsLeft, binding.slotChaserHoopsRight, binding.slotBeater1, binding.slotBeater2, binding.slotSeeker)
 
         // Dim the pitch background
         binding.pitchBackground.alpha = if (shouldHighlight) 0.5f else 1.0f
@@ -555,8 +701,11 @@ class PitchFragment : Fragment() {
             val occupant = viewModel.pitchOccupants.value[slotId]
             val view = slotBinding.root
 
-            if (shouldHighlight && occupant != null) {
-                if (occupant.id != scorerId) {
+            Log.d("HIGHLIGHT_DEBUG", "Slot $slotId | ShouldHighlight $shouldHighlight | Occupant ${occupant?.id} | In Valid Slot: ${slotBinding in validSlots} | Player Id: $playerId")
+
+            //shouldHighlight && occupant != null && slotBinding in validSlots
+            if (shouldHighlight && slotBinding in validSlots) {
+                if ((playerId?.isNotEmpty() == true && occupant != null && occupant.id != playerId) || (playerId == null)) {
 
                     // 2. PULSE: Smoothly scale up and down
                     val pulseX = android.animation.ObjectAnimator.ofFloat(view, View.SCALE_X, 1f, 1.08f).apply {
@@ -587,6 +736,8 @@ class PitchFragment : Fragment() {
                     // Dim the scorer so they look "inactive" for selection
                     view.alpha = 0.5f
                 }
+            } else if (shouldHighlight && !validSlots.contains(slotBinding)) {
+                view.alpha = 0.5f
             } else {
                 // RESET TO NORMAL: Revert to the state defined in updateSlotUi
                 (view.tag as? android.animation.AnimatorSet)?.cancel()
@@ -617,18 +768,57 @@ class PitchFragment : Fragment() {
             .show()
     }
 
-    private fun showConcededGoalTypeMenu() {
+    private fun showConcededGoalTypeMenu(hoopId: HoopID) {
         val types = arrayOf(ShotType.DUNK, ShotType.FINISH, ShotType.SHOT)
         val typeNames = types.map { it.name.lowercase().capitalize() }.toTypedArray()
 
         com.google.android.material.dialog.MaterialAlertDialogBuilder(requireContext())
             .setTitle("Goal Conceded: Shot Type?")
             .setItems(typeNames) { _, which ->
-                viewModel.finalizeConcededGoal(types[which])
+                viewModel.finalizeConcededGoal(types[which], hoopId,true)
             }
             .setNegativeButton("Cancel") { _, _ -> viewModel.resetRecordingState() }
             .setOnCancelListener { viewModel.resetRecordingState() }
             .setCancelable(true)
+            .show()
+    }
+
+    private fun showBludgerDialog() {
+        val options = arrayOf("0 Bludgers", "1 Bludger", "2 Bludgers")
+
+        com.google.android.material.dialog.MaterialAlertDialogBuilder(requireContext())
+            // Combine the title and the prompt into one header
+            .setTitle("Defensive Bludger Control")
+            .setCancelable(false)
+            // DO NOT call .setMessage() here if you want the list to show up!
+            .setItems(options) { _, which ->
+                // 'which' is the index (0, 1, or 2)
+                viewModel.submitDefensiveBludgers(which)
+            }
+            .show()
+    }
+
+    private fun showPenaltyCardDialog(player: Player, slotId: String) {
+        val cardTypes = arrayOf("Blue Card", "Yellow Card", "Red Card")
+
+        MaterialAlertDialogBuilder(requireContext())
+            .setTitle("Card for ${player.lastName.uppercase()}")
+            .setItems(cardTypes) { _, which ->
+                // Extract the color: "BLUE", "YELLOW", or "RED"
+                val color = when (cardTypes[which].split(" ")[0].uppercase()) {
+                    "BLUE" -> CardType.BLUE
+                    "YELLOW" -> CardType.YELLOW
+                    "RED" -> CardType.RED
+                    else -> CardType.BLUE
+                }
+
+                // --- CALL FINALIZE PENALTY HERE ---
+                viewModel.finalizePenalty(player, color, slotId, true)
+            }
+            .setOnDismissListener {
+                // If they cancel, go back to Idle
+                viewModel.resetRecordingState()
+            }
             .show()
     }
 

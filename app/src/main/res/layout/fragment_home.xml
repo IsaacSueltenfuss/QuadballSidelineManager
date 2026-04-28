@@ -91,7 +91,7 @@
             android:layout_width="match_parent"
             android:layout_height="80dp"
             android:layout_marginBottom="16dp"
-            android:text="Load Game"
+            android:text="Join Game"
             android:textSize="24sp"
             app:cornerRadius="12dp" />
 
@@ -107,7 +107,19 @@
             app:cornerRadius="12dp" />
 
         <com.google.android.material.button.MaterialButton
+            android:id="@+id/btn_opp_flag_catch"
+            android:visibility="gone"
+            style="@style/Widget.MaterialComponents.Button.UnelevatedButton"
+            android:layout_width="match_parent"
+            android:layout_height="80dp"
+            android:layout_marginBottom="16dp"
+            android:text="Opp Flag Catch"
+            android:textSize="24sp"
+            app:cornerRadius="12dp" />
+
+        <com.google.android.material.button.MaterialButton
             android:id="@+id/btn_whiteboard"
+            android:visibility="gone"
             android:layout_width="match_parent"
             android:layout_height="80dp"
             android:layout_marginBottom="16dp"

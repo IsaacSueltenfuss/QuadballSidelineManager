@@ -13,7 +13,9 @@ import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
+import com.example.quadballsidelinemanager.MainActivity
 import com.example.quadballsidelinemanager.MainViewModel
+import com.example.quadballsidelinemanager.MainViewModelFactory
 import com.example.quadballsidelinemanager.R
 import com.example.quadballsidelinemanager.databinding.FragmentSummaryBinding
 import com.example.quadballsidelinemanager.models.HoopID
@@ -26,7 +28,9 @@ class StatsSummary : Fragment() {
 
     private var _binding: FragmentSummaryBinding? = null
     private val binding get() = _binding!!
-    private val viewModel: MainViewModel by activityViewModels() // cite: 3
+    private val viewModel: MainViewModel by activityViewModels {
+        MainViewModelFactory((requireActivity() as MainActivity).authUser)
+    }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentSummaryBinding.inflate(inflater, container, false)
@@ -69,6 +73,11 @@ class StatsSummary : Fragment() {
             .flatMap { it.possessions } // Combine every player's possession list into one
             .distinctBy { it.id }       // Filter out duplicates based on the unique possession ID
             .size
+        val totalOffensiveTeamPossessions = players
+            .flatMap { it.possessions } // Combine every player's possession list into one
+            .filter { it.possessionType == PossessionType.OFFENSE }
+            .distinctBy { it.id }       // Filter out duplicates based on the unique possession ID
+            .size
         val totalTurnovers = players.sumOf { it.totalTurnovers }
 
         val shootingPerc = if (totalShots > 0) (totalGoals.toDouble() / totalShots) * 100 else 0.0
@@ -76,52 +85,48 @@ class StatsSummary : Fragment() {
         // 2. Update Snapshot Cards
         // Assuming you have a custom binding for the mini-cards
         binding.statScoreTeam.tvStatLabel.text = "${viewModel.currentTeam.value.teamAcronym.uppercase()} SCORE"
-        binding.statScoreTeam.tvStatValue.text = "${totalGoals * 10}"
+        binding.statScoreTeam.tvStatValue.text = "${viewModel.currentTeamScore.value}"
         binding.statScoreOpp.tvStatLabel.text = "${viewModel.opposingTeam.value.uppercase()} SCORE"
-        binding.statScoreOpp.tvStatValue.text = "${totalGoalsConceded * 10}"
+        binding.statScoreOpp.tvStatValue.text = "${viewModel.oppTeamScore.value}"
 
-        val conversionRate = if (totalTeamPossessions > 0) totalGoals.toDouble() * 100 / totalTeamPossessions.toDouble() else 0.0
+        val conversionRate = if (totalOffensiveTeamPossessions > 0) totalGoals.toDouble() * 100 / totalOffensiveTeamPossessions.toDouble() else 0.0
 
         // 3. Update Ratio Bar
         binding.tvPossessionRatio.text = "Goals: $totalGoals | Turnovers: $totalTurnovers | ${String.format("%.2f", conversionRate)}% Conversion"
-        val ratio = if (totalGoals + totalTurnovers > 0)
-            (totalGoals.toFloat() / (totalGoals + totalTurnovers) * 100).toInt() else 0
+        val ratio = if (totalOffensiveTeamPossessions > 0)
+            (totalGoals.toFloat() / totalOffensiveTeamPossessions * 100).toInt() else 0
         binding.progressGoalRatio.setProgress(ratio, true)
 
         val topScorersPerPossession = players
             .filter { it.totalOffensivePossessions > 3 } // Filter for a minimum sample size
-            .sortedByDescending { it.totalGoals.toDouble() / it.totalPossessions }
+            .sortedByDescending { it.goalsPerPossession }
             .take(3)
         val scorersText = topScorersPerPossession.joinToString("\n") { player ->
-            val rate = (player.totalGoals.toDouble() / player.totalPossessions)
-            "${player.lastName}: ${String.format("%.2f", rate)}" }
+            "${player.lastName}: ${String.format("%.2f", player.goalsPerPossession)}" }
         binding.tvMostGoals.text = if (scorersText.isEmpty()) "A minimum of 3 offensive possessions is required." else scorersText
 
         val topAssistsPerPossession = players
             .filter { it.totalOffensivePossessions > 3 } // Filter for a minimum sample size
-            .sortedByDescending { it.totalAssists.toDouble() / it.totalPossessions }
+            .sortedByDescending { it.assistsPerPossession }
             .take(3)
         val assistsText = topAssistsPerPossession.joinToString("\n") { player ->
-            val rate = (player.totalAssists.toDouble() / player.totalPossessions)
-            "${player.lastName}: ${String.format("%.2f", rate)}" }
+            "${player.lastName}: ${String.format("%.2f", player.assistsPerPossession)}" }
         binding.tvMostAssists.text = if (assistsText.isEmpty()) "A minimum of 3 offensive possessions is required." else assistsText
 
         val topPlusMinusPerPossession = players
             .filter { it.totalOffensivePossessions > 3 } // Filter for a minimum sample size
-            .sortedByDescending { it.plusMinus.toDouble() / it.totalPossessions }
+            .sortedByDescending { it.plusMinusPerPossession }
             .take(3)
         val topPlusMinusText = topPlusMinusPerPossession.joinToString("\n") { player ->
-            val rate = (player.plusMinus.toDouble() / player.totalPossessions) * 10
-            "${player.lastName}: ${String.format("%.2f", rate)}" }
+            "${player.lastName}: ${String.format("%.2f", player.plusMinusPerPossession)}" }
         binding.tvBestPlusMinus.text = if (topPlusMinusText.isEmpty()) "A minimum of 3 offensive possessions is required." else topPlusMinusText
 
         val leastPlusMinusPerPossession = players
             .filter { it.totalOffensivePossessions > 3 } // Filter for a minimum sample size
-            .sortedBy { it.plusMinus.toDouble() / it.totalPossessions }
+            .sortedBy { it.plusMinusPerPossession }
             .take(3)
         val leastPlusMinusText = leastPlusMinusPerPossession.joinToString("\n") { player ->
-            val rate = (player.plusMinus.toDouble() / player.totalPossessions) * 10
-            "${player.lastName}: ${String.format("%.2f", rate)}" }
+            "${player.lastName}: ${String.format("%.2f", player.plusMinusPerPossession)}" }
         binding.tvLeastPlusMinus.text = if (leastPlusMinusText.isEmpty()) "A minimum of 3 offensive possessions is required." else leastPlusMinusText
 
         // 4. Usage Leaders (Sorting players by possessions)
@@ -134,6 +139,25 @@ class StatsSummary : Fragment() {
         binding.tvLowUsage.text = lowUsageText
 
         updateHoopStats(players)
+
+        val highestDodgeballsPerPossession = players
+            .filter { it.dodgeballsOnDefense.isNotEmpty() }
+            .filter { it.totalDefensivePossessions > 3 } // Filter for a minimum sample size
+            .sortedByDescending { it.numDodgeballsPerPossession }
+            .take(3)
+        val highestDodgeballsPerPossessionText = highestDodgeballsPerPossession.joinToString("\n") { player ->
+            "${player.lastName}: ${String.format("%.2f", player.numDodgeballsPerPossession)}" }
+        binding.tvBestDodgeball.text = if (highestDodgeballsPerPossessionText.isEmpty()) "A minimum of 3 defensive possessions is required." else highestDodgeballsPerPossessionText
+
+        val leastDodgeballsPerPossession = players
+            .filter { it.dodgeballsOnDefense.isNotEmpty() }
+            .filter { it.totalDefensivePossessions > 3 } // Filter for a minimum sample size
+            .sortedBy { it.numDodgeballsPerPossession }
+            .take(3)
+        val leastDodgeballsPerPossessionText = leastDodgeballsPerPossession.joinToString("\n") { player ->
+            "${player.lastName}: ${String.format("%.2f", player.numDodgeballsPerPossession)}" }
+        binding.tvLeastDodgeball.text = if (leastDodgeballsPerPossessionText.isEmpty()) "A minimum of 3 defensive possessions is required." else leastDodgeballsPerPossessionText
+
     }
 
     private fun updateHoopStats(players: List<Player>) {

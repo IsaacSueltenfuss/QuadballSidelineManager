@@ -24,8 +24,8 @@ data class Possession (
     /**
      * Uses IDs
      */
-    val playersOnPitch: List<String>,
-    val playersInBox: List<String>,
+    val playersOnPitch: Map<String, String>,
+    val playersInBox: Map<String, String>,
 
     // For defensive possessions indicates how many bludgers the team has
     val bludgerCount: Int? = null,
@@ -42,4 +42,4 @@ data class Possession (
 
 enum class PossessionType { OFFENSE, DEFENSE }
 enum class PitchState { FULL_LINE, MISSING_PLAYERS}
-enum class PossessionResult { GOAL, CONCEDED_GOAL, TURNOVER }
+enum class PossessionResult { GOAL, CONCEDED_GOAL, TURNOVER, PENDING }

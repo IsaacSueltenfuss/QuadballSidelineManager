@@ -6,9 +6,11 @@ import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.ArrayAdapter
 import android.widget.CheckBox
 import android.widget.EditText
 import android.widget.PopupMenu
+import android.widget.Spinner
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.GridLayoutManager
 import com.example.quadballsidelinemanager.R
@@ -29,6 +31,15 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 import kotlin.getValue
+import android.net.Uri
+import android.widget.AutoCompleteTextView
+import android.widget.ImageView
+import java.io.File
+import androidx.activity.result.contract.ActivityResultContracts
+import com.example.quadballsidelinemanager.MainActivity
+import com.example.quadballsidelinemanager.MainViewModelFactory
+import com.example.quadballsidelinemanager.utils.Storage
+import com.google.android.material.button.MaterialButton
 
 class RosterFragment : Fragment() {
 
@@ -36,8 +47,21 @@ class RosterFragment : Fragment() {
     private val binding get() = _binding!!
 
     // Gets the shared view model
-    private val viewModel: MainViewModel by activityViewModels()
+    private val viewModel: MainViewModel by activityViewModels {
+        MainViewModelFactory((requireActivity() as MainActivity).authUser)
+    }
     private lateinit var rosterAdapter: RosterAdapter
+
+    private val pickImageLauncher = registerForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
+        uri?.let {
+            selectedImageUri = it
+            // This updates the preview in the dialog immediately!
+            previewImageView?.setImageURI(it)
+        }
+    }
+
+    private var selectedImageUri: Uri? = null
+    private var previewImageView: ImageView? = null
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -58,32 +82,85 @@ class RosterFragment : Fragment() {
         binding.fabAddPlayer.setOnClickListener {
             val dialogView = LayoutInflater.from(requireContext()).inflate(R.layout.dialog_add_player, null)
 
+            previewImageView = dialogView.findViewById(R.id.ivPlayerPreview)
+
+            dialogView.findViewById<View>(R.id.btnAddPhoto).setOnClickListener {
+                pickImageLauncher.launch("image/*")
+            }
+
+            val etName = dialogView.findViewById<EditText>(R.id.etPlayerName)
+            val etNumber = dialogView.findViewById<EditText>(R.id.etPlayerNumber)
+            val genderToggle = dialogView.findViewById<com.google.android.material.button.MaterialButtonToggleGroup>(R.id.toggleGender)
+            val spinnerPrimary = dialogView.findViewById<AutoCompleteTextView>(R.id.spinnerPrimaryPosition)
+
+            val cbKeeper = dialogView.findViewById<CheckBox>(R.id.cbKeeper)
+            val cbChaser = dialogView.findViewById<CheckBox>(R.id.cbChaser)
+            val cbBeater = dialogView.findViewById<CheckBox>(R.id.cbBeater)
+            val cbSeeker = dialogView.findViewById<CheckBox>(R.id.cbSeeker)
+
+            val checkboxes = mapOf(
+                QuadballPosition.KEEPER to cbKeeper,
+                QuadballPosition.CHASER to cbChaser,
+                QuadballPosition.BEATER to cbBeater,
+                QuadballPosition.SEEKER to cbSeeker
+            )
+
+            // 4. Setup Primary Position Dropdown
+            val positions = QuadballPosition.values().map { it.name }
+            val adapter = ArrayAdapter(requireContext(), android.R.layout.simple_list_item_1, positions)
+            spinnerPrimary.setAdapter(adapter)
+
+            spinnerPrimary.setText(QuadballPosition.KEEPER.name, false)
+
+            val genderId = R.id.btnGenderMale
+            genderToggle.check(genderId)
+
+            // 6. Pre-populate checkboxes and lock the Primary
+            checkboxes[QuadballPosition.KEEPER]?.isChecked = true
+            checkboxes[QuadballPosition.KEEPER]?.isEnabled = false
+
+            spinnerPrimary.setOnItemClickListener { _, _, index, _ ->
+                val selectedPos = QuadballPosition.valueOf(positions[index])
+
+                // Re-enable everything then lock the new selection
+                checkboxes.values.forEach { it.isEnabled = true }
+                checkboxes[selectedPos]?.apply {
+                    isChecked = true
+                    isEnabled = false
+                }
+            }
+
             MaterialAlertDialogBuilder(requireContext())
                 .setTitle("Add New Player")
                 .setView(dialogView)
                 .setPositiveButton("Add") { _, _ ->
-                    val name = dialogView.findViewById<EditText>(R.id.etPlayerName).text.toString()
-                    val number = dialogView.findViewById<EditText>(R.id.etPlayerNumber).text.toString().toIntOrNull() ?: 0
+                    val finalName = etName.text.toString()
+                    val finalNumber = etNumber.text.toString().toIntOrNull() ?: 0
+                    val finalPrimary = QuadballPosition.valueOf(spinnerPrimary.text.toString())
 
-                    // 1. Get Gender selection
-                    val genderToggle = dialogView.findViewById<com.google.android.material.button.MaterialButtonToggleGroup>(R.id.toggleGender)
-                    val gender = when (genderToggle.checkedButtonId) {
+                    val finalGender = when (genderToggle.checkedButtonId) {
                         R.id.btnGenderMale -> GenderIdentity.MALE
                         R.id.btnGenderFemale -> GenderIdentity.FEMALE
                         R.id.btnGenderNb -> GenderIdentity.NON_BINARY
                         else -> GenderIdentity.OTHER
                     }
 
-                    // 2. Collect positions (keep your existing checkbox logic here)
-                    val positions = mutableSetOf<QuadballPosition>()
-                    if (dialogView.findViewById<CheckBox>(R.id.cbKeeper).isChecked) positions.add(QuadballPosition.KEEPER)
-                    if (dialogView.findViewById<CheckBox>(R.id.cbChaser).isChecked) positions.add(QuadballPosition.CHASER)
-                    if (dialogView.findViewById<CheckBox>(R.id.cbBeater).isChecked) positions.add(QuadballPosition.BEATER)
-                    if (dialogView.findViewById<CheckBox>(R.id.cbSeeker).isChecked) positions.add(QuadballPosition.SEEKER)
+                    spinnerPrimary.setText(finalPrimary.toString().uppercase(), false)
 
-                    if (name.isNotBlank()) {
-                        viewModel.addNewPlayerToRoster(name, gender, number, positions)
+                    val finalPositions = checkboxes.filter { it.value.isChecked }.keys.toSet()
+
+                    // Push update to ViewModel using the Immutable Copy pattern
+                    val player = viewModel.addNewPlayerToRoster(
+                        finalName, finalGender, finalNumber, finalPrimary, finalPositions
+                    )
+
+                    selectedImageUri?.let { uri ->
+                        uploadImage(uri, player.id)
                     }
+
+                    // 3. Reset for next time
+                    selectedImageUri = null
+                    previewImageView = null
                 }
                 .setNegativeButton("Cancel", null)
                 .show()
@@ -93,6 +170,19 @@ class RosterFragment : Fragment() {
         setupAdapter(isBenchMode)
         setupRecyclerView(isBenchMode)
         observeViewModel(isBenchMode)
+    }
+
+    private fun uploadImage(uri: Uri, playerId: String) {
+        val tempFile = File(requireContext().cacheDir, "temp_upload.jpg")
+        requireContext().contentResolver.openInputStream(uri)?.use { input ->
+            tempFile.outputStream().use { output -> input.copyTo(output) }
+        }
+
+        val storage = com.example.quadballsidelinemanager.utils.Storage()
+        storage.uploadImage(tempFile, playerId) {
+            // Once upload is done, refresh the roster to show the new photo
+            viewModel.loadRoster()
+        }
     }
 
     /**
@@ -133,7 +223,7 @@ class RosterFragment : Fragment() {
                 val targetSlotId = viewModel.pendingSlot.value
 
                 if (isBenchMode && targetSlotId != null) {
-                    viewModel.assignPlayerToSlot(player, targetSlotId)
+                    viewModel.assignPlayerToSlot(player, targetSlotId, true)
                 } else if (isBenchMode) {
                     viewModel.startSubProcessPlayer(player, isDragging = false)
                 } else {
@@ -244,12 +334,6 @@ class RosterFragment : Fragment() {
                         binding.fabAddPlayer.visibility = if (enableType == EnableType.NONE) View.VISIBLE else View.GONE
                     }
                 }
-
-                launch {
-                    viewModel.statEventMessage.collect { message ->
-                        android.widget.Toast.makeText(requireContext(), message, android.widget.Toast.LENGTH_SHORT).show()
-                    }
-                }
             }
         }
     }
@@ -313,7 +397,7 @@ class RosterFragment : Fragment() {
             binding.rosterHeader.headerTitle.text = titleParts.joinToString(" ")
         } else {
             // If not in benchMode, sets title to "ACTIVE"/"TEXAS" pos "BY" sort
-            val statusText = if (active) "ACTIVE" else viewModel.currentTeam.value.teamName.uppercase()
+            val statusText = if (active) "ACTIVE" else viewModel.currentTeam.value.teamAcronym.uppercase()
             val posText = pos?.let { "${it.name}S".uppercase() } ?: "ROSTER"
             binding.rosterHeader.headerTitle.text = "$statusText $posText BY ${sort.name}"
         }

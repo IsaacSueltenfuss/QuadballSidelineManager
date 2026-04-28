@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "286680118655",
+    "project_id": "quadballsidelinemanager",
+    "storage_bucket": "quadballsidelinemanager.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:286680118655:android:b23087aa6e154ef586964a",
+        "android_client_info": {
+          "package_name": "com.example.quadballsidelinemanager"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCAnLyNGIHIg-UVIcl1TlgUCoozZD6i8qs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

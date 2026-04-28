@@ -95,6 +95,14 @@
             android:padding="8dp"/>
 
         <TextView
+            android:id="@+id/statDodgeballs"
+            android:text="Average Dodgeballs: 0"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_columnWeight="1"
+            android:padding="8dp"/>
+
+        <TextView
             android:id="@+id/statPlusMinus"
             android:text="+/-: +0"
             android:layout_width="0dp"
@@ -111,8 +119,8 @@
             android:padding="8dp"/>
 
         <TextView
-            android:id="@+id/statEfficiency"
-            android:text="EFF: 0.00"
+            android:id="@+id/beats"
+            android:text="Beats: 0"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_columnWeight="1"

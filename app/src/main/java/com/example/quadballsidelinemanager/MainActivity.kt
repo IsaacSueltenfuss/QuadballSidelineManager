@@ -10,7 +10,9 @@ import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.updatePadding
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.findNavController
 import androidx.navigation.navOptions
 import androidx.navigation.ui.AppBarConfiguration
@@ -24,7 +26,9 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMainBinding
     // Activity-level ViewModel that Fragments share
-    private val viewModel: MainViewModel by viewModels()
+    internal lateinit var authUser: AuthUser
+
+    private val viewModel: MainViewModel by viewModels { MainViewModelFactory(authUser) }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -36,6 +40,16 @@ class MainActivity : AppCompatActivity() {
             .findFragmentById(R.id.nav_host_fragment) as androidx.navigation.fragment.NavHostFragment
         val navController = navHostFragment.navController
         binding.bottomNav.setupWithNavController(navController)
+
+        authUser = AuthUser(activityResultRegistry)
+        lifecycle.addObserver(authUser)
+        // Auto login
+        authUser.liveUser.observe(this) { user ->
+            if (!user.isInvalid()) {
+                viewModel.setCurrentAuthUser(user)
+                viewModel.loadRoster()
+            }
+        }
 
         navController.addOnDestinationChangedListener { _, destination, _ ->
             if (binding.bottomNav.selectedItemId != destination.id) {
@@ -52,24 +66,31 @@ class MainActivity : AppCompatActivity() {
         }
 
         lifecycleScope.launch {
-            viewModel.pitchEnabled.collect { enableType ->
-                val menu = binding.bottomNav.menu
-                val pitchTab = menu.findItem(R.id.dest_pitch)
-                val summaryTab = menu.findItem(R.id.dest_summary)
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                // 1. Parallel Task: Handle Pitch Visibility & Redirection
+                launch {
+                    viewModel.pitchEnabled.collect { enableType ->
+                        val menu = binding.bottomNav.menu
+                        val pitchTab = menu.findItem(R.id.dest_pitch)
+                        val summaryTab = menu.findItem(R.id.dest_summary)
 
-                // 1. Toggle visibility of the Pitch menu item
-                if (enableType == EnableType.GAME_IN_PROGRESS || enableType == EnableType.GAME_LOADED) {
-                    pitchTab.isVisible = true
-                    summaryTab.isVisible = true
-                } else {
-                    pitchTab.isVisible = false
-                    summaryTab.isVisible = false
+                        // Toggle visibility
+                        val isVisible = enableType == EnableType.GAME_IN_PROGRESS || enableType == EnableType.GAME_LOADED
+                        pitchTab.isVisible = isVisible
+                        summaryTab.isVisible = isVisible
+
+                        // Safety Redirection
+                        if (enableType == EnableType.NONE && navController.currentDestination?.id == R.id.dest_pitch) {
+                            navController.navigate(R.id.dest_home)
+                        }
+                    }
                 }
 
-                // 2. Safety Redirection:
-                // If we are currently ON the pitch and it gets disabled, kick back to Home.
-                if (enableType == EnableType.NONE && navController.currentDestination?.id == R.id.dest_pitch) {
-                    navController.navigate(R.id.dest_home)
+                // 2. Parallel Task: Handle Global Toasts
+                launch {
+                    viewModel.statEventMessage.collect { message ->
+                        android.widget.Toast.makeText(this@MainActivity, message, android.widget.Toast.LENGTH_SHORT).show()
+                    }
                 }
             }
         }
