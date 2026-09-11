@@ -1,13 +1,44 @@
-Project Overview:
-On the home screen you can start a new game or load an existing one (useful for when there are multiple coaches per team logged in, tracking different stats). The games will be stored in Firebase and updated live.
+# Quadball Sideline Manager
 
-The roster screen shows all players for your selected team, as well as their number, name, primary position. It's sorted by default by primary position, but the players can also be sorted by last name, gender, jersey number, possessions played, and plus/minus. The list can be filtered to exclude or include inactive players (you can hold on a player to mark them as inactive), as well as only show players from certain positions. Clicking on a player card will make a stats page pop up, listing their basic information as well as their statistics for the current game. There is also an option to edit their basic information (changes here will perpetuate to Firebase). There is also a floating action button to add a new player, with a custom name, position(s), jersey number, photo, and gender.
+## Tech Stack & Architecture
 
+* **Language:** Kotlin
+* **Architecture:** MVVM (Model-View-ViewModel) with Unidirectional Data Flow
+* **UI & Navigation:** ViewBinding, AndroidX Navigation Component, Material Design Components
+* **Asynchronous Flow:** Kotlin Coroutines & `StateFlow` / `SharedFlow`
+* **Backend & Auth:** 
+  * Firebase Authentication (via FirebaseUI)
+  * Cloud Firestore (Live game logs and roster data)
+  * Firebase Cloud Storage (Player headshots)
+
+---
+
+## App Instructions
+![Home Screen Screenshot](screenshots/home.png)
+**Home Screen:**
+On the home screen the user can start a new game or load an existing one (useful for when there are multiple coaches per team logged in, tracking different stats). The games are stored in Firebase and updated live.
+
+---
+
+![Roster Screen Screenshot](screenshots/roster.png)
+**Roster Screen:**
+The roster screen shows all players for the user's selected team, as well as their number, name, and primary position. It's sorted by default by primary position, but the players can also be sorted by last name, gender, jersey number, possessions played, and plus/minus. The list can be filtered to exclude or include inactive players (the user can hold on a player to mark them as inactive), as well as only show players from certain positions. Clicking on a player card will make a stats page pop up, listing their basic information as well as their statistics for the current game. There is also an option to edit their basic information (changes here will perpetuate to Firebase). There is also a floating action button to add a new player, with a custom name, position(s), jersey number, photo, and gender.
+
+---
+
+**Settings Screen:**
 The settings screen provides options to sign in/log out of an account, enforce the gender rule in games for substitutions, prevent players from playing positions that they are not indicated with, and whether or not to track bludger stats (how many bludgers the defense starts with every defensive possession).
 
+---
+
+![Empty Pitch Screenshot](screenshots/empty_pitch.png)
+**Pitch View Screen:**
 Once a game is started or joined, the user is brought to a pitch view tab. This starts as empty (if a new game), but has 6 empty spots for players to be substituted in. These slots are notated with each position's name and color to indicate which players should be substituted where. The substitution process is fairly simple but consists of 2 methods; the first is to click the player/empty slot to be substituted out, at which point the bench view in the lower third of the screen will filter for only those players that can play that position. To finalize this first method, the user should click on the desired substitute and they will be swapped in. This also works for substituting players between different positions while both are on the pitch (as is the case when a keeper is sent to the penalty box, for example). The second method of substitution involves finding the player you want to substitute in in the bench, then dragging that player out onto the pitch. Upon the drag initiation, all slots within the positions that that player can play will begin shaking and are highlighted, while the remainder of the pitch is darkened. To complete this process, the user should simply release while the player to be substituted is over the slot of their choice. This also works for substituting players between different positions while both are on the pitch, as above.
 
+![Full Pitch Screenshot](screenshots/full_pitch.png)
 Once all empty slots have been filled with players the bench view closes (although it can be pulled back up with a floating action button, and can be closed earlier by clicking the same floating action button) and the pitch zooms in. This begins the stat tracking portion of the game.
+
+---
 
 The app records every event (substitution, goal, turnover, etc.) as an action within a global actions list for that game which is stored in Firebase. This actions list is what allows for others to view the live status of the game (as it simply iterates through every action in the list).
 
@@ -28,4 +59,5 @@ Again, players can be substituted out at any point. For them to be attributed a 
  - Defensive data (which chasers/keeper turn the ball over most, which play the best defense)
  - +/- stats
 
-All of these stats can be viewed in the Roster tab during the ongoing game. There is also a separate Summary tab that includes live analytics. This tab lists the current score of the game, possession outcomes (separated between goals and turnovers) on offense, conversation rates, the players with the highest goals and assists per offensive possession, the players with the highest and lowest +/- per possession, the players with the most and least posssessions played this game, and maps of which hoops we have scored on and been scored on the most.
+![Player Stats Screenshot](screenshots/player_stats.png)
+All of these stats can be viewed in the Roster tab during the ongoing game. There is also a separate Summary tab that includes live analytics. This tab lists the current score of the game, possession outcomes (separated between goals and turnovers) on offense, conversation rates, the players with the highest goals and assists per offensive possession, the players with the highest and lowest +/- per possession, the players with the most and least possessions played this game, and maps of which hoops we have scored on and been scored on the most.
